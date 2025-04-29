@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gzresturent/core/constant/colors.dart';
+import 'package:gzresturent/features/auth/controller/auth_controller.dart';
 
-class RewardsScreen extends StatefulWidget {
-  static const routeName = '/reward-screen';
-
+class RewardsScreen extends ConsumerStatefulWidget {
   const RewardsScreen({super.key});
+  static const routeName = '/reward-screen';
   @override
-  _RewardsScreenState createState() => _RewardsScreenState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _RewardsScreenState();
 }
 
-class _RewardsScreenState extends State<RewardsScreen>
+class _RewardsScreenState extends ConsumerState<RewardsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 1, vsync: this);
   }
 
   @override
   Widget build(BuildContext context) {
+    var user = ref.watch(userProvider);
     return Scaffold(
       appBar: AppBar(
         iconTheme: IconThemeData(color: Colors.white),
@@ -31,26 +33,33 @@ class _RewardsScreenState extends State<RewardsScreen>
           indicatorColor: Colors.yellow,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          tabs: [Tab(text: "Earn"), Tab(text: "Redeem"), Tab(text: "Offers")],
+          tabs: [
+            Tab(text: "Earn"),
+            //  Tab(text: "Redeem"),
+            //  Tab(text: "Offers"),
+          ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildEarnTab(),
-          Center(child: Text("Redeem Page")),
-          Center(child: Text("Offers Page")),
+          _buildEarnTab(user!.loyaltyPoints),
+          // Center(child: Text("Redeem Page")),
+          // Center(child: Text("Offers Page")),
         ],
       ),
     );
   }
 
-  Widget _buildEarnTab() {
+  Widget _buildEarnTab(int points) {
+    int nextRewardThreshold = ((points / 100).ceil()) * 100;
+    int pointsToNextReward = nextRewardThreshold - points;
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(16),
       child: Column(
         children: [
-          // Panda Points Card
+          // Points Card
           Card(
             color: Apptheme.logoOutsideColor,
             shape: RoundedRectangleBorder(
@@ -62,7 +71,7 @@ class _RewardsScreenState extends State<RewardsScreen>
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    "148",
+                    points.toString(),
                     style: TextStyle(
                       fontSize: 40,
                       fontWeight: FontWeight.bold,
@@ -70,21 +79,26 @@ class _RewardsScreenState extends State<RewardsScreen>
                     ),
                   ),
                   Text(
-                    "PANDA POINTS®",
+                    "GK POINTS®",
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   SizedBox(height: 8),
+
+                  /// 🟡 Dynamic Progress Bar to Next 100
                   LinearProgressIndicator(
-                    value: 148 / 200,
+                    value: (points % 100) / 100,
                     backgroundColor: Colors.white38,
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow),
                   ),
+
                   SizedBox(height: 8),
+
+                  /// 🟡 Dynamic Message
                   Text(
-                    "52 points to your next reward",
+                    "$pointsToNextReward points to your next reward",
                     style: TextStyle(
                       color: Colors.yellow,
                       fontWeight: FontWeight.bold,
@@ -95,6 +109,7 @@ class _RewardsScreenState extends State<RewardsScreen>
             ),
           ),
           SizedBox(height: 20),
+
           // Earn Points with Receipt
           SizedBox(
             width: double.infinity,
@@ -126,7 +141,6 @@ class _RewardsScreenState extends State<RewardsScreen>
             ),
           ),
           SizedBox(height: 20),
-          // Locked Reward Section
         ],
       ),
     );

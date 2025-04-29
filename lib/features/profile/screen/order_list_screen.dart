@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gzresturent/core/constant/colors.dart';
+import 'package:gzresturent/features/profile/screen/delivery_track.dart';
+import 'package:gzresturent/features/profile/screen/refund_request_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:dotted_line/dotted_line.dart';
@@ -26,9 +28,44 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
       PageController(); // PageView controller
   int _selectedIndex = 0; // 0 for Ongoing, 1 for History
 
+  var orderstep = 'Order Received';
+  var orderId = '';
+  var paymentIntentid = '';
+  var maxAmount = '';
+  var currentuserid = '';
+  var orderTrackid = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // bottomNavigationBar: Padding(
+      //   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      //   child: ElevatedButton(
+      //     style: ElevatedButton.styleFrom(
+      //       backgroundColor: Apptheme.buttonColor,
+      //     ),
+      //     onPressed: () {
+      //       if (orderstep == 'Order Received') {
+      //         Navigator.push(
+      //           context,
+      //           MaterialPageRoute(
+      //             builder:
+      //                 (_) => RefundRequestScreen(
+      //                   orderId: orderId,
+      //                   paymentIntentId: paymentIntentid,
+      //                   maxAmount: double.parse(maxAmount),
+      //                   userId: currentuserid,
+      //                   orderTrackid: orderTrackid,
+      //                 ),
+      //           ),
+      //         );
+      //       } else {
+      //         print('refund not possible');
+      //       }
+      //     },
+      //     child: Text('Refund', style: TextStyle(color: Colors.white)),
+      //   ),
+      // ),
       appBar: AppBar(
         title: Text(
           "My Order",
@@ -177,7 +214,20 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                       )
                       .toList();
 
-              return OrderTrackingScreen(ongoingOrder: ongoingOrders.first);
+              orderstep =
+                  ongoingOrders.first.orderSteps[1].timestamp == null
+                      ? 'Order Received'
+                      : 'Order in Making';
+              orderId = ongoingOrders.first.id;
+              paymentIntentid = ongoingOrders.first.transactionId!;
+              maxAmount = ongoingOrders.first.totalPrice.toString();
+              currentuserid = ongoingOrders.first.userId;
+              orderTrackid = ongoingOrders.first.trackid;
+
+              return OrderTrackingScreen(
+                ongoingOrder: ongoingOrders.first,
+                trackId: ongoingOrders.first.deliveryTrackingUrl,
+              );
             }
           },
           loading:
@@ -268,10 +318,13 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                 itemCount: ongoingOrders.length,
                 itemBuilder: (context, index) {
                   return OrderHistoryCard(
-                    orderId: ongoingOrders[index].trackid,
+                    orderId: ongoingOrders[index].id,
                     status: ongoingOrders[index].status,
                     totalPrice: ongoingOrders[index].totalPrice,
                     createdAt: ongoingOrders[index].createdAt.toDate(),
+                    tranctionId: ongoingOrders[index].transactionId!,
+                    userId: ongoingOrders[index].userId,
+                    trackId: ongoingOrders[index].trackid,
                     onTap: () {},
                   );
                 },
@@ -292,7 +345,6 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
           },
         );
   }
-
 }
 
 class OrderHistoryCard extends StatelessWidget {
@@ -301,6 +353,9 @@ class OrderHistoryCard extends StatelessWidget {
   final double totalPrice;
   final DateTime createdAt;
   final VoidCallback onTap;
+  final String tranctionId;
+  final String userId;
+  final String trackId;
 
   const OrderHistoryCard({
     Key? key,
@@ -309,6 +364,9 @@ class OrderHistoryCard extends StatelessWidget {
     required this.totalPrice,
     required this.createdAt,
     required this.onTap,
+    required this.tranctionId,
+    required this.userId,
+    required this.trackId,
   }) : super(key: key);
 
   @override
@@ -327,7 +385,7 @@ class OrderHistoryCard extends StatelessWidget {
             children: [
               // Order ID
               Text(
-                "Order ID: $orderId",
+                "Order ID: $trackId",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -358,13 +416,45 @@ class OrderHistoryCard extends StatelessWidget {
               SizedBox(height: 8),
 
               // Total Price
-              Text(
-                "Total: \$${totalPrice.toStringAsFixed(2)}",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Total: \$${totalPrice.toStringAsFixed(2)}",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Apptheme.buttonColor,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => RefundRequestScreen(
+                                orderId: orderId,
+                                paymentIntentId: tranctionId,
+                                maxAmount: totalPrice,
+                                userId: userId,
+                                orderTrackid: trackId,
+                              ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      "Complaint",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -390,8 +480,13 @@ class OrderHistoryCard extends StatelessWidget {
 
 class OrderTrackingScreen extends StatelessWidget {
   final OrderModel ongoingOrder;
+  final String? trackId;
 
-  const OrderTrackingScreen({super.key, required this.ongoingOrder});
+  const OrderTrackingScreen({
+    super.key,
+    required this.ongoingOrder,
+    required this.trackId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -423,6 +518,8 @@ class OrderTrackingScreen extends StatelessWidget {
                 !isCompleted &&
                 (index == 0 || orderSteps[index - 1]['timestamp'] != null);
 
+            log(isCompleted.toString());
+
             return _buildOrderStatusItem(
               icon: _getStepIcon(step['step']),
               title: step['step'],
@@ -432,6 +529,26 @@ class OrderTrackingScreen extends StatelessWidget {
               isLast: index == orderSteps.length - 1,
             );
           }).toList(),
+          Spacer(),
+          if (trackId != null)
+            Center(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Apptheme.buttonColor,
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => MyWebView(url: trackId!),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Track Order',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -1,1 +1,47 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"genghis-khan-restaurant","appId":"1:60189244962:android:12f6c9ce4913b56038547b","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"genghis-khan-restaurant","appId":"1:60189244962:ios:2a3d7f9dc089cc3438547b","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"genghis-khan-restaurant","configurations":{"android":"1:60189244962:android:12f6c9ce4913b56038547b","ios":"1:60189244962:ios:2a3d7f9dc089cc3438547b","web":"1:60189244962:web:1e0c18b0133e49f638547b"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "genghis-khan-restaurant",
+          "appId": "1:60189244962:android:12f6c9ce4913b56038547b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "genghis-khan-restaurant",
+          "appId": "1:60189244962:ios:2a3d7f9dc089cc3438547b",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "genghis-khan-restaurant",
+          "configurations": {
+            "android": "1:60189244962:android:12f6c9ce4913b56038547b",
+            "ios": "1:60189244962:ios:2a3d7f9dc089cc3438547b",
+            "web": "1:60189244962:web:1e0c18b0133e49f638547b"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}

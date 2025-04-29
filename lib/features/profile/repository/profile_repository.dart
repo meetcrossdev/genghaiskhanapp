@@ -54,6 +54,16 @@ class UserProfileRepository {
     }
   }
 
+    FutureVoid updateLoyaltyPoints(String id,int points) async {
+    try {
+      return right(_users.doc(id).update({'loyaltyPoints': points}));
+    } on FirebaseException catch (e) {
+      throw e.message!;
+    } catch (e) {
+      return left(Failure(e.toString()));
+    }
+  }
+
   Future<UserModel?> fetchUserByUID(String uid) async {
     try {
       // Query the collection to get the user with the specified UID

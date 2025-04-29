@@ -91,6 +91,25 @@ class AuthController extends StateNotifier<bool> {
     );
   }
 
+  void signInWithApple(BuildContext context, String devicetoken) async {
+    state = true;
+    final user = await _authRepository.appleSignIn(devicetoken);
+    state = false;
+    //use for error handling by using package fpdart and type_ds.dart
+    user.fold(
+      (failure) {
+        showSnackBar(context, failure.message);
+        print('auth error is ${failure.message}');
+        Navigator.of(context).pop();
+        return;
+      },
+      (userModel) {
+        _ref.read(userProvider.notifier).update((state) => userModel);
+        Navigator.of(context).pop();
+      },
+    );
+  }
+
   void signUpWithEmailAndPassword({
     required String name,
     required String email,
@@ -99,6 +118,7 @@ class AuthController extends StateNotifier<bool> {
     required String password,
     required BuildContext context,
     required String devicetoken,
+    required String dob,
   }) async {
     try {
       // Call authentication repository function
@@ -110,6 +130,7 @@ class AuthController extends StateNotifier<bool> {
         password,
         context,
         devicetoken,
+        dob,
       );
 
       // Handle response using fold (Either)

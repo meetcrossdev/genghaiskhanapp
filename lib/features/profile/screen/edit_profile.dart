@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gzresturent/core/constant/colors.dart';
 import 'package:gzresturent/features/auth/controller/auth_controller.dart';
+import 'package:gzresturent/features/profile/controller/profile_controller.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -17,6 +18,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   TextEditingController emailcontroller = TextEditingController();
   TextEditingController phoneControllercontroller = TextEditingController();
   TextEditingController locationController = TextEditingController();
+  TextEditingController dobController = TextEditingController();
 
   loadUserData() {
     var user = ref.read(userProvider);
@@ -25,7 +27,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       emailcontroller = TextEditingController(text: user.email);
       phoneControllercontroller = TextEditingController(text: user.phoneNo);
       locationController = TextEditingController(text: user.address);
+      dobController = TextEditingController(text: user.dob);
     }
+  }
+
+  void save() {
+    ref
+        .read(userProfileControllerProvider.notifier)
+        .editProfile(
+          context: context,
+          name: namecontroller.text.trim(),
+          email: emailcontroller.text.trim(),
+          phoneno: phoneControllercontroller.text.trim(),
+          dob: dobController.text.trim(),
+        );
+
+    // Navigator.of(context).push(MaterialPageRoute(
+    //   builder: (context) => DashBoard(),
+    // ));
   }
 
   @override
@@ -91,13 +110,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     Icons.location_city,
                     true,
                   ),
+                  buildTextField(
+                    dobController,
+                    "DoB",
+                    "",
+                    Icons.door_back_door,
+                    true,
+                  ),
 
                   SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        save();
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Apptheme.buttonColor,
                         shape: RoundedRectangleBorder(

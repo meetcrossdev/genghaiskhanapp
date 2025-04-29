@@ -4,6 +4,7 @@ import 'package:gzresturent/features/auth/signup_screen.dart';
 import 'package:gzresturent/features/boarding_screen.dart';
 import 'package:gzresturent/features/home/screen/checkout_screen.dart';
 import 'package:gzresturent/features/home/screen/home_screen.dart';
+import 'package:gzresturent/features/home/screen/reservation_screen.dart';
 import 'package:gzresturent/features/onboarding/onboarding.dart';
 import 'package:gzresturent/features/profile/screen/edit_profile.dart';
 import 'package:gzresturent/features/profile/screen/favortie_screen.dart';
@@ -13,6 +14,8 @@ import 'package:gzresturent/features/profile/screen/reward_points.dart';
 import 'package:gzresturent/models/cart.dart';
 import 'package:gzresturent/models/menu_items.dart';
 import 'package:gzresturent/nav_screen.dart';
+
+import '../features/profile/screen/my_booking_screen.dart';
 
 Route<dynamic> generateRoute(RouteSettings routeSettings) {
   switch (routeSettings.name) {
@@ -88,6 +91,16 @@ Route<dynamic> generateRoute(RouteSettings routeSettings) {
       return MaterialPageRoute(
         settings: routeSettings,
         builder: (context) => EditProfileScreen(),
+      );
+    case MyBookingScreen.routeName:
+      return MaterialPageRoute(
+        settings: routeSettings,
+        builder: (context) => MyBookingScreen(),
+      );
+    case ReservationScreen.routeName:
+      return MaterialPageRoute(
+        settings: routeSettings,
+        builder: (context) => ReservationScreen(),
       );
     default:
       return MaterialPageRoute(

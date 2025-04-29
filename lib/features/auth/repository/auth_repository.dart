@@ -1,8 +1,12 @@
 import 'dart:developer';
 import 'dart:io';
-
+import 'dart:math' as math;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,6 +93,13 @@ class AuthRepository {
         credential,
       );
       UserModel? userModel;
+      final token = await FirebaseMessaging.instance.getToken();
+      if (Platform.isIOS) {
+        String? apns = await FirebaseMessaging.instance.getAPNSToken();
+        print('APNs Token: $apns');
+      }
+
+      final userId = userCredential.user!.uid;
 
       // Check if it's a new user
       if (userCredential.additionalUserInfo!.isNewUser) {
@@ -102,19 +113,26 @@ class AuthRepository {
           phoneNo: userCredential.user!.phoneNumber ?? '',
           favoriteDishes: [], // Default empty list
 
-          deviceToken: devicetoken,
+          deviceToken: token,
           address: null, // Address not available initially
           role: "customer", // Default role is "customer"
           loyaltyPoints: 0, // New user starts with 0 points
           orderHistory: [], // No order history initially
+          dob: '',
         );
 
         // Save new user to Firestore
         await users.doc(userCredential.user!.uid).set(userModel.toMap());
       } else {
+        final token = await FirebaseMessaging.instance.getToken();
+        final userId = userCredential.user!.uid;
+        if (Platform.isIOS) {
+          String? apns = await FirebaseMessaging.instance.getAPNSToken();
+          print('APNs Token: $apns');
+        }
         // Existing user: update device token and fetch user data
         await users.doc(userCredential.user!.uid).update({
-          'deviceToken': devicetoken,
+          'deviceToken': token,
           'online': true,
         });
 
@@ -138,6 +156,7 @@ class AuthRepository {
     String password,
     BuildContext context,
     String devicetoken,
+    String dob,
   ) async {
     String? profileImage;
 
@@ -174,6 +193,7 @@ class AuthRepository {
         role: "customer", // Default role is "customer"
         loyaltyPoints: 0, // New user starts with 0 loyalty points
         orderHistory: [], // Empty order history for new users
+        dob: dob,
       );
 
       // Save user to Firestore
@@ -186,25 +206,6 @@ class AuthRepository {
       return left(Failure(e.toString()));
     }
   }
-
-  // FutureVoid loginWithEmailAndPassword(
-  //   String email,
-  //   String password,
-  //   BuildContext context,
-  // ) async {
-  //   try {
-  //     await _auth
-  //         .signInWithEmailAndPassword(email: email, password: password)
-  //         .then((value) {});
-
-  //     // ignore: use_build_context_synchronously
-  //     return right(showSnackBar(context, 'login successfully'));
-  //   } on FirebaseException catch (e) {
-  //     return right(showSnackBar(context, e.toString()));
-  //   } catch (e) {
-  //     return left(Failure(e.toString()));
-  //   }
-  // }
 
   FutureEither<UserModel?> loginWithEmailAndPassword(
     String email,
@@ -230,10 +231,15 @@ class AuthRepository {
       UserModel userModel = UserModel.fromMap(
         userDoc.data() as Map<String, dynamic>,
       );
+      if (Platform.isIOS) {
+        String? apns = await FirebaseMessaging.instance.getAPNSToken();
+        print('APNs Token: $apns');
+      }
+      final token = await FirebaseMessaging.instance.getToken();
 
       // Update device token & online status
       await users.doc(userCredential.user!.uid).update({
-        'deviceToken': devicetoken,
+        'deviceToken': token,
         'online': true,
       });
 
@@ -247,19 +253,6 @@ class AuthRepository {
       return left(Failure(e.toString()));
     }
   }
-
-  // Stream<User?> get authStateChnage =>
-  //     _auth.authStateChanges().asyncMap((user) async {
-  //       if (user != null) {
-  //         final userModel = await getUserData(user.uid).first;
-  //         if (userModel != null && userModel.status != 'active') {
-  //           // User is inactive, sign them out
-  //           await _auth.signOut();
-  //           // You may also consider showing a message to the user
-  //         }
-  //       }
-  //       return user;
-  //     });
 
   Stream<User?> get authStateChnage => _auth.authStateChanges();
 
@@ -311,6 +304,82 @@ class AuthRepository {
       print('Error fetching users: $e');
       return [];
     }
+  }
+
+  FutureEither<UserModel?> appleSignIn(String devicetoken) async {
+    try {
+      // final rawNonce = _generateNonce();
+      // final nonce = _sha256ofString(rawNonce);
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      final token = await FirebaseMessaging.instance.getToken();
+
+      UserModel? userModel;
+
+      if (userCredential.additionalUserInfo!.isNewUser) {
+        userModel = UserModel(
+          id: userCredential.user!.uid,
+          name:
+              '${appleCredential.givenName ?? 'No'} ${appleCredential.familyName ?? 'Name'}',
+          profilePic:
+              'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg', // Default pic
+          email: userCredential.user!.email ?? '',
+          phoneNo: '',
+          favoriteDishes: [],
+          deviceToken: devicetoken,
+          address: null,
+          role: "customer",
+          loyaltyPoints: 0,
+          orderHistory: [],
+          dob: '',
+        );
+
+        await users.doc(userCredential.user!.uid).set(userModel.toMap());
+      } else {
+        await users.doc(userCredential.user!.uid).update({
+          'deviceToken': token,
+          'online': true,
+        });
+
+        userModel = await getUserData(userCredential.user!.uid).first;
+      }
+
+      return right(userModel);
+    } on FirebaseAuthException catch (e) {
+      return left(Failure(e.message ?? "Apple sign-in error"));
+    } catch (e, st) {
+      print('Apple Sign-in error: $e');
+      print('Stack trace: $st');
+      return left(Failure(e.toString()));
+    }
+  }
+
+  String _generateNonce([int length = 32]) {
+    final charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = math.Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 
   void signOut() async {

@@ -1,54 +1,120 @@
+import 'dart:convert';
 import 'dart:math';
+import 'dart:developer' as log;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:gzresturent/core/constant/colors.dart';
+import 'package:gzresturent/core/utility.dart';
 import 'package:gzresturent/features/auth/controller/auth_controller.dart';
+import 'package:gzresturent/features/home/controller/cart_controller.dart';
+import 'package:gzresturent/features/profile/controller/profile_controller.dart';
+import 'package:gzresturent/features/profile/screen/map_screen.dart';
+import 'package:gzresturent/main.dart';
 import 'package:gzresturent/models/cart.dart';
+import 'package:gzresturent/services/payment_services.dart';
 import 'package:uuid/uuid.dart';
-
+import 'package:http/http.dart' as http;
 import '../../../models/ordermenu.dart';
 import '../../../models/ordermodal.dart';
 import '../controller/order_controller.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
-  const CheckoutScreen({
-    super.key,
-    required this.total,
-    required this.cartitem,
-  });
+  CheckoutScreen({super.key, required this.total, required this.cartitem});
   static const routeName = '/cart-detail-screen';
-  final double total;
+  double total;
+
   final List<CartItemModel> cartitem;
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _CheckoutScreenState();
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  final TextEditingController nameController = TextEditingController(
+  TextEditingController nameController = TextEditingController(
     text: "Vanessa Jonson",
   );
-  final TextEditingController emailController = TextEditingController(
+  TextEditingController emailController = TextEditingController(
     text: "vanessajonson@gmail.com",
   );
-  final TextEditingController phoneController = TextEditingController(
+  TextEditingController phoneController = TextEditingController(
     text: "+01234567890",
   );
-  final TextEditingController addressController = TextEditingController(
-    text: "Boston",
+  TextEditingController addressController = TextEditingController(
+    text: "address(Optional)",
   );
-  final TextEditingController deliveryTimeController = TextEditingController(
+  TextEditingController additionalNotesController = TextEditingController(
     text: "Additional Notes",
   );
 
-  String selectedDelivery = "Home Delivery"; // Default selected option
+  String selectedDelivery = "Take Away"; // Default selected option
+  Map<String, dynamic>? intentPaymentData;
+  double amountToBeCharge = 20;
+  String currency = 'USD';
+  double loyaltyPointsDiscount = 0;
+  int loyaltyPointsRemaining = 0;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getUserInfoForOrder();
+  }
+
+  // Future<void> createDoorDashDelivery({
+  //   required String customerName,
+  //   required String customerPhone,
+  //   required String dropoffAddress,
+  //   required int orderValue,
+  // }) async {
+  //   final response = await http.post(
+  //     Uri.parse(
+  //       'https://us-central1-genghis-khan-restaurant.cloudfunctions.net/createDoorDashDelivery',
+  //     ),
+  //     headers: {'Content-Type': 'application/json'},
+  //     body: json.encode({
+  //       'dropoffAddress': dropoffAddress,
+  //       'customerPhone': customerPhone,
+  //       'customerName': customerName,
+  //       'orderValue': orderValue,
+  //     }),
+  //   );
+
+  //   if (response.statusCode == 200) {
+  //     print("Delivery created: ${response.body}");
+  //     // Show success to user or proceed accordingly
+  //   } else {
+  //     print("Failed to create delivery: ${response.body}");
+  //     // Handle error
+  //   }
+  // }
+
+  getUserInfoForOrder() {
+    var user = ref.read(userProvider);
+    nameController = TextEditingController(text: user?.name);
+    phoneController = TextEditingController(
+      text: user!.phoneNo.isEmpty ? 'phone(optional)' : user.phoneNo,
+    );
+    emailController = TextEditingController(text: user.email);
+    addressController = TextEditingController(
+      text: user.address ?? 'Address(optional)',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    void placeOrder(BuildContext context) async {
+    var tax = ref.watch(taxStreamProvider).value;
+    var loggedUser = ref.watch(userProvider);
+    var currentAddress = loggedUser?.address;
+    void placeOrder(
+      BuildContext context,
+      String paymentIntentid,
+      bool isSuccess,
+    ) async {
       List<OrderItem> orderItems =
           widget.cartitem.map((cartItem) {
             return OrderItem(
@@ -89,21 +155,56 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         OrderStep(step: "Delivered", timestamp: null),
       ];
 
+      var total = 0.0;
+      int loyaltyPoints = widget.total.toInt();
+
+      selectedDelivery.toLowerCase() == 'delivery'
+          ? total = widget.total + (widget.total * tax! / 100) + 9.75
+          : total = widget.total + (widget.total * tax! / 100);
+
       final order = OrderModel(
         id: orderId,
         userId: FirebaseAuth.instance.currentUser!.uid,
         items: orderItems,
-        totalPrice: widget.total,
+        totalPrice: total,
         status: "Order Received",
         createdAt: Timestamp.fromDate(DateTime.now()),
         completedAt: null,
         deliveryAddress: user!.address ?? 'User Address go here',
         paymentMethod: '',
-        additionalNotes: '',
-        transactionId: 'Trans_id',
+        additionalNotes: additionalNotesController.text,
+        transactionId: paymentIntentid,
         orderSteps: orderSteps,
         trackid: trackId, // 🔥 Assigning the generated tracking ID
+        paymentIntentId: paymentIntentid,
+        paymentStatus: isSuccess ? 'Paid' : 'failed',
+        orderType: selectedDelivery,
+        tax: (widget.total * tax / 100).toString(),
       );
+      if (loyaltyPointsDiscount > 0) {
+        print('loyaltyPoints inside the place order ${loyaltyPointsRemaining}');
+        var totalNewLoyaltyPoints = loyaltyPointsRemaining + loyaltyPoints;
+
+        print('total new points are ${totalNewLoyaltyPoints}');
+        ref
+            .read(userProfileControllerProvider.notifier)
+            .updateLoyaltyPoints(
+              id: user!.id,
+              points: totalNewLoyaltyPoints,
+              context: context,
+            );
+      } else {
+        var currentPoints = user!.loyaltyPoints;
+        var totalPoints = currentPoints + loyaltyPoints;
+        print('total points are ${totalPoints}');
+        ref
+            .read(userProfileControllerProvider.notifier)
+            .updateLoyaltyPoints(
+              id: user.id,
+              points: totalPoints,
+              context: context,
+            );
+      }
 
       ref.read(orderControllerProvider.notifier).placeOrder(order, context);
     }
@@ -170,7 +271,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    deliverySelection(),
+                    deliverySelection(currentAddress),
                     const SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.all(10),
@@ -190,7 +291,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Add Delivery Info',
+                            'Add Order Info',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 17.sp,
@@ -198,9 +299,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                           _buildTextField(nameController),
                           _buildTextField(emailController),
-                          _buildTextField(phoneController),
-                          _buildTextField(addressController),
-                          _buildTextField(deliveryTimeController),
+                          // _buildTextField(phoneController),
+                          // _buildTextField(addressController),
+                          _buildTextField(additionalNotesController),
                         ],
                       ),
                     ),
@@ -213,6 +314,47 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
+                  "tax.",
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w400,
+                    color: Apptheme.logoInsideColor,
+                  ),
+                ),
+                Text(
+                  "+${(widget.total * tax! / 100).toStringAsFixed(2)} \$",
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+            if (selectedDelivery.toLowerCase() == 'delivery')
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "delivery.",
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w400,
+                      color: Apptheme.logoInsideColor,
+                    ),
+                  ),
+                  Text(
+                    " +9.75\$",
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
                   "Total Amount",
                   style: TextStyle(
                     fontSize: 16.sp,
@@ -221,7 +363,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                 ),
                 Text(
-                  "${widget.total} \$",
+                  selectedDelivery.toLowerCase() != 'delivery'
+                      ? "${widget.total + (widget.total * tax / 100)} \$"
+                      : "${widget.total + (widget.total * tax / 100) + 9.75} \$",
                   style: TextStyle(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w400,
@@ -234,7 +378,47 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  placeOrder(context);
+                  var total = 0.0;
+
+                  if (selectedDelivery.toLowerCase() == 'delivery') {
+                    if (currentAddress == null || currentAddress == '') {
+                      showSnackBar(context, 'Please select address');
+                      return;
+                    }
+                    if (loggedUser!.phoneNo.isEmpty) {
+                      showSnackBar(
+                        context,
+                        'update phone number from profile menu',
+                      );
+                      return;
+                    }
+                  }
+
+                  selectedDelivery.toLowerCase() == 'delivery'
+                      ? total = widget.total + (widget.total * tax / 100) + 9.75
+                      : total = widget.total + (widget.total * tax / 100);
+
+                  final paymentService = PaymentService(
+                    context,
+                    // onPaymentSuccess: () => placeOrder(context),
+                    onPaymentSuccess: (paymentIntentId, success) {
+                      if (success) {
+                        print("🎉 Payment succeeded! ID: $paymentIntentId");
+                        placeOrder(context, paymentIntentId, success);
+                        // Store the paymentIntentId in order, mark order as paid etc.
+                      } else {
+                        // print("⚠️ Payment failed or was cancelled.");
+                        showSnackBar(
+                          context,
+                          '⚠️ Payment failed or was cancelled."',
+                        );
+                      }
+                    },
+                  );
+                  paymentService.startPayment(
+                    (total * 100).toString(),
+                    "usd",
+                  ); // $10.00
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 40.h),
@@ -264,7 +448,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  deliverySelection() {
+  deliverySelection(String? address) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -282,25 +466,74 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header: Deliver to + Add Address
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //   children: [
+          //     const Text(
+          //       "Deliver to",
+          //       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          //     ),
+          //     GestureDetector(
+          //       onTap: () async {
+          //         Navigator.of(context).pushNamed(MapLocation.routeName);
+          //         // Add Address action
+          //         // await createDoorDashDelivery(
+          //         //   customerName: 'Test User',
+          //         //   customerPhone: '+16505555555',
+          //         //   dropoffAddress:
+          //         //       '901 Market Street 6th Floor San Francisco, CA 94103',
+          //         //   orderValue: 2999,
+          //         // );
+          //       },
+          //       child: const Text(
+          //         "Add Address",
+          //         style: TextStyle(
+          //           fontSize: 16,
+          //           fontWeight: FontWeight.bold,
+          //           color: Colors.amber,
+          //         ),
+          //       ),
+          //     ),
+          //     // TextButton(
+          //     //   onPressed: () async {
+          //     //     final response = await http.post(
+          //     //       Uri.parse(
+          //     //         'https://us-central1-genghis-khan-restaurant.cloudfunctions.net/trackDoorDashDelivery',
+          //     //       ),
+          //     //       headers: {'Content-Type': 'application/json'},
+          //     //       body: jsonEncode({
+          //     //         'externalDeliveryId': 'order-1745225735746',
+          //     //       }),
+          //     //     );
+
+          //     //    log.log('Track status: ${response.body}');
+          //     //   },
+          //     //   child: Text('Check Status'),
+          //     // ),
+          //   ],
+          // ),
+          // SizedBox(height: 10),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.start,
+          //   children: [
+          //     if (address == null)
+          //       const Icon(Icons.info_outline, color: Colors.red),
+          //     const SizedBox(width: 5),
+          //     Expanded(
+          //       child: Text(
+          //         address ?? "No contact info added",
+          //         style: TextStyle(color: Colors.red, fontSize: 14),
+          //       ),
+          //     ),
+          //   ],
+          // ),
+          // SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "Deliver to",
+                "Discounts",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              GestureDetector(
-                onTap: () {
-                  // Add Address action
-                },
-                child: const Text(
-                  "Add Address",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.amber,
-                  ),
-                ),
               ),
             ],
           ),
@@ -311,11 +544,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const Icon(Icons.info_outline, color: Colors.red),
+              const Icon(Icons.discount),
               const SizedBox(width: 5),
-              const Text(
-                "No contact info added",
-                style: TextStyle(color: Colors.red, fontSize: 14),
+              GestureDetector(
+                onTap: () {
+                  var user = ref.read(userProvider);
+                  if (user!.loyaltyPoints < 100) {
+                    showSnackBar(
+                      context,
+                      'A minimum of 100 points are needed to get the discount',
+                    );
+                    return;
+                  }
+                  showLoyaltyPointDialog(context, user.loyaltyPoints, (
+                    discount,
+                    remainingPoints,
+                  ) {
+                    setState(() {
+                      widget.total -= discount;
+                      loyaltyPointsDiscount = discount;
+                      loyaltyPointsRemaining = remainingPoints;
+                    });
+                    print(
+                      'Discount: $discount, Remaining Points: $remainingPoints',
+                    );
+                  });
+                },
+                child: const Text(
+                  "Use Loyalty Points",
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -324,33 +582,89 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
           // Delivery Type title
           const Text(
-            "Delivery Type",
+            "Order Type",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 10),
 
-          // Home Delivery Selection
+          // Dine-in Selection
+          // GestureDetector(
+          //   onTap: () {
+          //     setState(() {
+          //       selectedDelivery = "Delivery";
+          //       // selectedDelivery = "Take Away";
+          //     });
+          //     // showSnackBar(context, 'This feature will be available soon');
+          //   },
+          //   child: Container(
+          //     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          //     decoration: BoxDecoration(
+          //       color:
+          //           selectedDelivery == "Delivery"
+          //               ? Colors.red.withOpacity(0.1)
+          //               : Colors.transparent,
+          //       borderRadius: BorderRadius.circular(12),
+          //       border: Border.all(
+          //         color:
+          //             selectedDelivery == "Delivery"
+          //                 ? Colors.red
+          //                 : Colors.grey.shade300,
+          //         width: selectedDelivery == "Delivery" ? 2 : 1,
+          //       ),
+          //     ),
+          //     child: Row(
+          //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //       children: [
+          //         Row(
+          //           children: [
+          //             Icon(
+          //               selectedDelivery == "Delivery"
+          //                   ? Icons.radio_button_checked
+          //                   : Icons.radio_button_unchecked,
+          //               color: Colors.red,
+          //             ),
+          //             const SizedBox(width: 10),
+          //             const Text(
+          //               "Delivery",
+          //               style: TextStyle(
+          //                 fontSize: 16,
+          //                 fontWeight: FontWeight.bold,
+          //               ),
+          //             ),
+          //           ],
+          //         ),
+          //         const Text(
+          //           "9.75 \$",
+          //           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
+          // const SizedBox(height: 10),
           GestureDetector(
             onTap: () {
               setState(() {
-                selectedDelivery = "Home Delivery";
+                selectedDelivery = "Dine-in";
+                // selectedDelivery = "Take Away";
               });
+              // showSnackBar(context, 'This feature will be available soon');
             },
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
                 color:
-                    selectedDelivery == "Home Delivery"
+                    selectedDelivery == "Dine-in"
                         ? Colors.red.withOpacity(0.1)
                         : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color:
-                      selectedDelivery == "Home Delivery"
+                      selectedDelivery == "Dine-in"
                           ? Colors.red
                           : Colors.grey.shade300,
-                  width: selectedDelivery == "Home Delivery" ? 2 : 1,
+                  width: selectedDelivery == "Dine-in" ? 2 : 1,
                 ),
               ),
               child: Row(
@@ -359,14 +673,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Row(
                     children: [
                       Icon(
-                        selectedDelivery == "Home Delivery"
+                        selectedDelivery == "Dine-in"
                             ? Icons.radio_button_checked
                             : Icons.radio_button_unchecked,
                         color: Colors.red,
                       ),
                       const SizedBox(width: 10),
                       const Text(
-                        "Home Delivery",
+                        "Dine-in",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -374,10 +688,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ],
                   ),
-                  const Text(
-                    "10.00 \$",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  // const Text(
+                  //   "10.00 \$",
+                  //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // ),
                 ],
               ),
             ),
@@ -429,16 +743,83 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ],
                   ),
-                  const Text(
-                    "Free",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  // const Text(
+                  //   "Free",
+                  //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // ),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void showLoyaltyPointDialog(
+    BuildContext context,
+    int totalPoints,
+    Function(double discount, int remainingPoints) onRedeem,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        double selectedPoints = 0;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            double dollarPerPoint = 0.05;
+            double dollars = selectedPoints * dollarPerPoint;
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text("Redeem Loyalty Points"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Your Points: $totalPoints"),
+                  SizedBox(height: 20),
+                  Text("Redeem: ${selectedPoints.toInt()} points"),
+                  Slider(
+                    value: selectedPoints,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedPoints = value;
+                      });
+                    },
+                    min: 0,
+                    max: totalPoints.toDouble(),
+                    divisions: totalPoints,
+                    label: "${selectedPoints.toInt()}",
+                  ),
+                  SizedBox(height: 10),
+                  Text("Equivalent: \$${dollars.toStringAsFixed(2)}"),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("Cancel"),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    // TODO: Handle redemption logic here
+                    onRedeem(dollars, totalPoints - selectedPoints.toInt());
+
+                    Navigator.pop(context);
+                  },
+                  child: Text("Redeem"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

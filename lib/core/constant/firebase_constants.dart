@@ -4,4 +4,11 @@ class FirebaseConstants {
   static const menuCollection = 'menu';
   // static const commentsCollection = 'comments';
   static const ordersCollection = 'orders';
+  static const storeHoursCollection = 'hours';
+  static const promotionsCollection = 'promotions';
+  static const reservationCollection = 'reservation';
+  static const timeSlotsCollection = 'timeslot';
+  static const adonsCollection = 'addons';
+  static const refundRequestsCollection='refundRequest';
 }
+

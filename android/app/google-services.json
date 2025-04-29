@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:60189244962:android:12f6c9ce4913b56038547b",
+        "mobilesdk_app_id": "1:60189244962:android:35755a245ecb5eb838547b",
         "android_client_info": {
-          "package_name": "com.example.gzresturent"
+          "package_name": "com.example.genghais_admin"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "60189244962-cp8hg8udqv3jq366unu0ja9s770kfmaq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCm8pJIVEGIFvGs2q75fRgE08mTL4Tr7pU"
@@ -20,7 +25,99 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "60189244962-cp8hg8udqv3jq366unu0ja9s770kfmaq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "60189244962-38tvn3t9tj330ustj236e2bcuadpt1p7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.genghaisAdmin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:60189244962:android:12f6c9ce4913b56038547b",
+        "android_client_info": {
+          "package_name": "com.example.gzresturent"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "60189244962-cr7drs41pj04dtt9s31qqf9ki2rpbinj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.gzresturent",
+            "certificate_hash": "4d79381770ffc63d7abcc6c1e7e3de79483c9b7a"
+          }
+        },
+        {
+          "client_id": "60189244962-cp8hg8udqv3jq366unu0ja9s770kfmaq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCm8pJIVEGIFvGs2q75fRgE08mTL4Tr7pU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "60189244962-cp8hg8udqv3jq366unu0ja9s770kfmaq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "60189244962-38tvn3t9tj330ustj236e2bcuadpt1p7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.genghaisAdmin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:60189244962:android:fc048e557910e97a38547b",
+        "android_client_info": {
+          "package_name": "com.meetcross.gkbbg"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "60189244962-cp8hg8udqv3jq366unu0ja9s770kfmaq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCm8pJIVEGIFvGs2q75fRgE08mTL4Tr7pU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "60189244962-cp8hg8udqv3jq366unu0ja9s770kfmaq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "60189244962-38tvn3t9tj330ustj236e2bcuadpt1p7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.genghaisAdmin"
+              }
+            }
+          ]
         }
       }
     }

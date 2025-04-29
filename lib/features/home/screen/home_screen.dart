@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +10,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gzresturent/core/constant/colors.dart';
 import 'package:gzresturent/core/utility.dart';
 import 'package:gzresturent/features/auth/controller/auth_controller.dart';
+import 'package:gzresturent/features/home/controller/ad_ons_controller.dart';
 import 'package:gzresturent/features/home/controller/cart_controller.dart';
 import 'package:gzresturent/features/home/controller/menu_controller.dart';
+import 'package:gzresturent/features/home/screen/reservation_screen.dart';
 import 'package:gzresturent/features/profile/controller/profile_controller.dart';
+import 'package:gzresturent/models/ads_on.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 
 import '../../../models/cart.dart';
@@ -31,6 +35,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var addonData = ref.watch(addonsFetchProvider).value;
     return ref
         .watch(menuFetchProvider)
         .when(
@@ -81,52 +86,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Search Bar
-                      Container(
-                        height: 40.h,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 6,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: "Search Food, groceries, drink, etc.",
-                            hintStyle: TextStyle(fontSize: 12.sp),
-                            prefixIcon: const Icon(Icons.search),
-                            suffixIcon: const Icon(Icons.tune),
-                            //  filled: true,
-                            //  fillColor: Theme.of(context).cardColor,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none, // Removes border
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
+                      // Container(
+                      //   height: 40.h,
+                      //   padding: const EdgeInsets.all(12),
+                      //   decoration: BoxDecoration(
+                      //     color: Theme.of(context).cardColor,
+                      //     borderRadius: BorderRadius.circular(16),
+                      //     boxShadow: [
+                      //       BoxShadow(
+                      //         color: Colors.black.withOpacity(0.05),
+                      //         blurRadius: 6,
+                      //         spreadRadius: 2,
+                      //       ),
+                      //     ],
+                      //   ),
+                      //   child: TextField(
+                      //     decoration: InputDecoration(
+                      //       hintText: "Search Food, groceries, drink, etc.",
+                      //       hintStyle: TextStyle(fontSize: 12.sp),
+                      //       prefixIcon: const Icon(Icons.search),
+                      //       suffixIcon: const Icon(Icons.tune),
+                      //       //  filled: true,
+                      //       //  fillColor: Theme.of(context).cardColor,
+                      //       border: OutlineInputBorder(
+                      //         borderRadius: BorderRadius.circular(12),
+                      //         borderSide: BorderSide.none, // Removes border
+                      //       ),
+                      //       enabledBorder: OutlineInputBorder(
+                      //         borderRadius: BorderRadius.circular(12),
+                      //         borderSide: BorderSide.none,
+                      //       ),
+                      //       focusedBorder: OutlineInputBorder(
+                      //         borderRadius: BorderRadius.circular(12),
+                      //         borderSide: BorderSide.none,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
+                          backgroundColor: Apptheme.buttonColor,
+                          elevation: 1,
+                          minimumSize: Size(double.infinity, 40.h),
+                        ),
+                        onPressed: () async {
+                          Navigator.of(
+                            context,
+                          ).pushNamed(ReservationScreen.routeName);
+                        },
+                        child: Text(
+                          'Make Reservation',
+                          style: TextStyle(color: Colors.white),
                         ),
                       ),
                       const SizedBox(height: 16),
                       // Carousel Banner
-                      offerBanner(),
+                      offerBanner(context),
 
                       const SizedBox(height: 16),
 
                       // Categories List
                       SizedBox(
-                        height: 80.h,
+                        height:
+                            MediaQuery.of(context).size.height > 600
+                                ? 100.h
+                                : 80.h,
                         child: ListView(
                           scrollDirection: Axis.horizontal,
                           children: [
@@ -145,6 +172,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           categoryName: entry.key,
                           items: entry.value,
                           ref: ref,
+                          data: addonData!,
                         );
                       }).toList(),
 
@@ -198,11 +226,13 @@ class CategorySection extends StatelessWidget {
   final String categoryName;
   final List<MenuItem> items;
   final WidgetRef ref;
+  final List<AddonModel> data;
 
   const CategorySection({
     required this.categoryName,
     required this.items,
     required this.ref,
+    required this.data,
     Key? key,
   }) : super(key: key);
 
@@ -229,7 +259,7 @@ class CategorySection extends StatelessWidget {
 
               return GestureDetector(
                 onTap: () {
-                  showFoodDetailsBottomSheet(context, item, ref);
+                  showFoodDetailsBottomSheet(context, item, data, ref);
                 },
                 child: foodCard(
                   item.name,
@@ -249,6 +279,7 @@ List<String> selectedAddons = [];
 void showFoodDetailsBottomSheet(
   BuildContext context,
   MenuItem item,
+  List<AddonModel>? data,
   WidgetRef ref,
 ) {
   final TextEditingController controller = TextEditingController();
@@ -291,53 +322,56 @@ void showFoodDetailsBottomSheet(
                             fit: BoxFit.cover,
                           ),
                         ),
-                        Positioned(
-                          top: 10.h,
-                          right: 10.w,
-                          child: GestureDetector(
-                            onTap: () async {
-                              ref
-                                  .read(userProfileControllerProvider.notifier)
-                                  .updateUserFavorite(
-                                    item.id,
-                                    FirebaseAuth.instance.currentUser!.uid,
-                                    context,
-                                  );
-
-                              // Manually trigger a state update for userProvider
-                              ref.read(userProvider.notifier).update((user) {
-                                if (user == null) return null;
-
-                                List<String> updatedFavorites =
-                                    List<String>.from(user.favoriteDishes);
-
-                                if (updatedFavorites.contains(item.id)) {
-                                  updatedFavorites.remove(item.id);
-                                } else {
-                                  updatedFavorites.add(item.id);
-                                }
-
-                                return user.copyWith(
-                                  favoriteDishes: updatedFavorites,
-                                );
-                              });
-
-                              setState(() {}); // Refresh bottom sheet UI
-                            },
-                            child: CircleAvatar(
-                              backgroundColor: Colors.white,
-                              child: Icon(
+                        if (ref.watch(userProvider) != null)
+                          Positioned(
+                            top: 10.h,
+                            right: 10.w,
+                            child: GestureDetector(
+                              onTap: () async {
                                 ref
-                                        .watch(userProvider)!
-                                        .favoriteDishes
-                                        .contains(item.id)
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color: Colors.red,
+                                    .read(
+                                      userProfileControllerProvider.notifier,
+                                    )
+                                    .updateUserFavorite(
+                                      item.id,
+                                      FirebaseAuth.instance.currentUser!.uid,
+                                      context,
+                                    );
+
+                                // Manually trigger a state update for userProvider
+                                ref.read(userProvider.notifier).update((user) {
+                                  if (user == null) return null;
+
+                                  List<String> updatedFavorites =
+                                      List<String>.from(user.favoriteDishes);
+
+                                  if (updatedFavorites.contains(item.id)) {
+                                    updatedFavorites.remove(item.id);
+                                  } else {
+                                    updatedFavorites.add(item.id);
+                                  }
+
+                                  return user.copyWith(
+                                    favoriteDishes: updatedFavorites,
+                                  );
+                                });
+
+                                setState(() {}); // Refresh bottom sheet UI
+                              },
+                              child: CircleAvatar(
+                                backgroundColor: Colors.white,
+                                child: Icon(
+                                  ref
+                                          .watch(userProvider)!
+                                          .favoriteDishes
+                                          .contains(item.id)
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: Colors.red,
+                                ),
                               ),
                             ),
                           ),
-                        ),
                         Positioned(
                           bottom: 2.h,
                           right: 10.w,
@@ -409,7 +443,7 @@ void showFoodDetailsBottomSheet(
                         ),
                       ),
                     ),
-
+                    SizedBox(height: 10.h),
                     // Borhani Options (Radio Buttons)
                     // Padding(
                     //   padding: EdgeInsets.all(10.0.sp),
@@ -421,22 +455,99 @@ void showFoodDetailsBottomSheet(
 
                     // Addons (Checkboxes)
                     Padding(
-                      padding: EdgeInsets.all(10.0.sp),
-                      child: _buildOptionSection(context, "Addons", [
-                        _buildCheckboxOption(
-                          "Coke",
-                          5.00,
-                          selectedAddons,
-                          setState,
+                      padding: const EdgeInsets.all(10.0),
+                      child: Text(
+                        'Addons',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                        _buildCheckboxOption(
-                          "Water",
-                          15.00,
-                          selectedAddons,
-                          setState,
-                        ),
-                      ], isOptional: true),
+                      ),
                     ),
+                    SizedBox(height: 10.h),
+                    SizedBox(
+                      height: 100.h,
+                      width: double.infinity,
+                      child: Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: ListView.builder(
+                          itemCount: data!.length,
+                          itemBuilder: (context, index) {
+                            return _buildCheckboxOption(
+                              data[index].title,
+                              data[index].price,
+                              selectedAddons,
+                              setState,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    // SizedBox(
+                    //   height: 100.h,
+                    //   width: double.infinity,
+                    //   child: Padding(
+                    //     padding: const EdgeInsets.all(10.0),
+                    //     child: ref
+                    //         .watch(addonsFetchProvider)
+                    //         .when(
+                    //           data: (data) {
+                    //             if (data.isEmpty) {
+                    //               return Center(
+                    //                 child: Padding(
+                    //                   padding: const EdgeInsets.only(top: 18.0),
+                    //                   child: Text('No Addons to show'),
+                    //                 ),
+                    //               );
+                    //             } else {
+                    //               return ListView.builder(
+                    //                 itemCount: data.length,
+                    //                 itemBuilder: (context, index) {
+                    //                   return _buildCheckboxOption(
+                    //                     data[index].title,
+                    //                     data[index].price,
+                    //                     selectedAddons,
+                    //                     setState,
+                    //                   );
+                    //                 },
+                    //               );
+                    //             }
+                    //           },
+                    //           loading:
+                    //               () => const Scaffold(
+                    //                 body: Center(
+                    //                   child: LoadingIndicator(
+                    //                     indicatorType:
+                    //                         Indicator.ballClipRotatePulse,
+                    //                   ),
+                    //                 ),
+                    //               ),
+                    //           error: (err, stack) {
+                    //             log('error is ${err}');
+                    //             return Scaffold(
+                    //               body: Center(child: Text('Error: $err')),
+                    //             );
+                    //           },
+                    //         ),
+                    //   ),
+                    // ),
+                    // Padding(
+                    //   padding: EdgeInsets.all(10.0.sp),
+                    //   child: _buildOptionSection(context, "Addons", [
+                    //     _buildCheckboxOption(
+                    //       "Coke",
+                    //       5.00,
+                    //       selectedAddons,
+                    //       setState,
+                    //     ),
+                    //     _buildCheckboxOption(
+                    //       "Water",
+                    //       15.00,
+                    //       selectedAddons,
+                    //       setState,
+                    //     ),
+                    //   ], isOptional: true),
+                    // ),
 
                     // Total Price
                     Padding(
@@ -685,10 +796,10 @@ Widget _buildOptionSection(
 }
 
 // Offer Banner Widget
-Widget offerBanner() {
+Widget offerBanner(BuildContext context) {
   return Container(
     width: double.infinity,
-    height: 120.h,
+    height: MediaQuery.of(context).size.width > 600 ? 150.h : 120.h,
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(12),
       image: const DecorationImage(
@@ -736,20 +847,22 @@ Widget offerBanner() {
 Widget categoryChip(String label) {
   return Padding(
     padding: EdgeInsets.all(5.0.sp),
-    child: Column(
-      children: [
-        CircleAvatar(
-          backgroundColor: Colors.grey[200],
-          radius: 30.r,
-          backgroundImage: NetworkImage(
-            'https://static.vecteezy.com/system/resources/thumbnails/036/397/536/small/ai-generated-chinese-food-spicy-food-isolated-on-transparent-background-png.png',
+    child: SingleChildScrollView(
+      child: Column(
+        children: [
+          CircleAvatar(
+            backgroundColor: Colors.grey[200],
+            radius: 30.r,
+            backgroundImage: NetworkImage(
+              'https://static.vecteezy.com/system/resources/thumbnails/036/397/536/small/ai-generated-chinese-food-spicy-food-isolated-on-transparent-background-png.png',
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.sp),
-        ),
-      ],
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.sp),
+          ),
+        ],
+      ),
     ),
   );
 }

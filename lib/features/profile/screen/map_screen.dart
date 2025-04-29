@@ -265,6 +265,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gzresturent/features/auth/controller/auth_controller.dart';
 import 'package:gzresturent/features/profile/controller/profile_controller.dart';
 import 'package:place_picker_google/place_picker_google.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -338,6 +339,9 @@ class _MapLocationState extends ConsumerState<MapLocation> {
                   debugPrint("Place picked: ${result.formattedAddress}");
                   FirebaseAuth auth = FirebaseAuth.instance;
                   debugPrint("Place picked: ${result.formattedAddress}");
+                  setState(() {
+                    isLoading = true;
+                  });
                   await ref
                       .read(userProfileControllerProvider.notifier)
                       .updateLocation(
@@ -346,6 +350,15 @@ class _MapLocationState extends ConsumerState<MapLocation> {
                         context: context,
                       );
 
+                  final updatedUser = await ref
+                      .read(authControllerProvider.notifier)
+                      .getSpecificUserData(auth.currentUser!.uid);
+
+                  ref.read(userProvider.notifier).state = updatedUser;
+
+                  setState(() {
+                    isLoading = false;
+                  });
                   Navigator.of(context).pop();
                 },
                 enableNearbyPlaces: false,
@@ -406,6 +419,12 @@ class _MapLocationState extends ConsumerState<MapLocation> {
                     location: result.formattedAddress!,
                     context: context,
                   );
+
+              final updatedUser = await ref
+                  .read(authControllerProvider.notifier)
+                  .getSpecificUserData(auth.currentUser!.uid);
+
+              ref.read(userProvider.notifier).state = updatedUser;
             },
             enableNearbyPlaces: false,
             showSearchInput: true,

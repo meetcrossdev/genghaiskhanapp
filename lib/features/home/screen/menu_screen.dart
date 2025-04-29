@@ -14,6 +14,9 @@ import 'package:loading_indicator/loading_indicator.dart';
 
 import '../controller/cart_controller.dart';
 
+final searchQueryProvider = StateProvider<String>((ref) => '');
+final selectedFilterProvider = StateProvider<String?>((ref) => null);
+
 class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
 
@@ -22,13 +25,27 @@ class MenuScreen extends ConsumerStatefulWidget {
 }
 
 class _MenuScreenState extends ConsumerState<MenuScreen> {
+  final TextEditingController controller = TextEditingController();
   @override
   Widget build(BuildContext context) {
+    final searchQuery = ref.watch(searchQueryProvider);
     return ref
         .watch(menuFetchProvider)
         .when(
           data: (data) {
             final allItems = data.expand((menu) => menu.items).toList();
+
+            List<MenuItem> filteredOrders =
+                allItems.where((menu) {
+                  final matchesSearch =
+                      searchQuery.isEmpty ||
+                      menu.name.toLowerCase().contains(
+                        searchQuery.toLowerCase(),
+                      );
+
+                  return matchesSearch;
+                }).toList();
+
             return Scaffold(
               body: SafeArea(
                 child: Padding(
@@ -55,6 +72,13 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                         ),
                       ),
                       SizedBox(height: 10),
+                      SearchBarWithFilters(
+                        onSearch: (p0) {
+                          ref.read(searchQueryProvider.notifier).state = p0;
+                        },
+                        controller: controller,
+                      ),
+                      SizedBox(height: 10),
                       Expanded(
                         child: GridView.builder(
                           gridDelegate:
@@ -62,11 +86,14 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
-                                childAspectRatio: 0.56.sp,
+                                childAspectRatio:
+                                    MediaQuery.of(context).size.width > 600
+                                        ? 1.5.sp
+                                        : 0.56.sp,
                               ),
-                          itemCount: allItems.length,
+                          itemCount: filteredOrders.length,
                           itemBuilder: (context, index) {
-                            final item = allItems[index];
+                            final item = filteredOrders[index];
                             return MenuItemWidget(
                               item: item,
                               onAddToCart: (quantity, note) {
@@ -207,22 +234,22 @@ class _MenuItemWidgetState extends State<MenuItemWidget> {
                   children: [
                     CupertinoButton(
                       padding: EdgeInsets.zero,
-                      child: Icon(CupertinoIcons.add_circled),
-                      onPressed: () {
-                        setState(() {
-                          quantity++;
-                        });
-                      },
-                    ),
-                    Text(quantity.toString()),
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
                       child: Icon(CupertinoIcons.minus_circle),
                       onPressed: () {
                         setState(() {
                           if (quantity > 1) {
                             quantity--;
                           }
+                        });
+                      },
+                    ),
+                    Text(quantity.toString()),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: Icon(CupertinoIcons.add_circled),
+                      onPressed: () {
+                        setState(() {
+                          quantity++;
                         });
                       },
                     ),
@@ -289,6 +316,49 @@ class _MenuItemWidgetState extends State<MenuItemWidget> {
           ],
         );
       },
+    );
+  }
+}
+
+class SearchBarWithFilters extends StatelessWidget {
+  final TextEditingController controller;
+
+  final Function(String) onSearch;
+
+  SearchBarWithFilters({
+    super.key,
+    required this.onSearch,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: TextField(
+        onChanged: onSearch,
+        controller: controller,
+        decoration: InputDecoration(
+          prefixIcon: Icon(Icons.search, color: Colors.grey),
+          hintText: "Search ",
+          hintStyle: TextStyle(color: Colors.grey),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.orange, width: 2),
+          ),
+        ),
+      ),
     );
   }
 }

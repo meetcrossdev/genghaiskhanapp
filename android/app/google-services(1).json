@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "60189244962",
+    "project_id": "genghis-khan-restaurant",
+    "storage_bucket": "genghis-khan-restaurant.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:60189244962:android:12f6c9ce4913b56038547b",
+        "android_client_info": {
+          "package_name": "com.example.gzresturent"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCm8pJIVEGIFvGs2q75fRgE08mTL4Tr7pU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

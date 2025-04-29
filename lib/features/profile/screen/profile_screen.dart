@@ -7,8 +7,12 @@ import 'package:gzresturent/features/auth/login_screen.dart';
 import 'package:gzresturent/features/profile/screen/edit_profile.dart';
 import 'package:gzresturent/features/profile/screen/favortie_screen.dart';
 import 'package:gzresturent/features/profile/screen/map_screen.dart';
+import 'package:gzresturent/features/profile/screen/my_booking_screen.dart';
 import 'package:gzresturent/features/profile/screen/order_list_screen.dart';
+import 'package:gzresturent/features/profile/screen/refund_history_screen.dart';
+import 'package:gzresturent/features/profile/screen/reservation_screen.dart';
 import 'package:gzresturent/features/profile/screen/reward_points.dart';
+import 'package:gzresturent/features/profile/screen/shop_hours.dart';
 
 import '../../auth/controller/auth_controller.dart';
 
@@ -59,9 +63,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           color: isDarkMode ? Colors.white : Colors.black87,
                         ),
                       ),
-                      Text(
-                        user != null ? user.email : 'Sign Up or Login',
-                        style: TextStyle(fontSize: 14, color: Colors.redAccent),
+                      GestureDetector(
+                        onTap: () {
+                          if (user == null) {
+                            Navigator.of(
+                              context,
+                            ).pushNamed(LoginScreen.routeName);
+                          }
+                        },
+                        child: Text(
+                          user != null ? user.email : 'Sign Up or Login',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.redAccent,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -141,7 +157,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       "Favourite",
                     ),
                   ),
-                  _quickActionCard(Icons.wallet_outlined, "Wallet"),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(
+                        context,
+                      ).pushNamed(MyBookingScreen.routeName);
+                    },
+                    child: _quickActionCard(Icons.book_online, "Bookings"),
+                  ),
                   GestureDetector(
                     onTap: () {
                       if (user == null) {
@@ -186,7 +209,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Column(
                   children: [
                     _menuItem(Icons.person_outline, "Profile", () {
-                        if (user == null) {
+                      if (user == null) {
                         showSnackBar(
                           context,
                           'Please login to access the feature',
@@ -212,10 +235,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     }),
 
                     _menuItem(Icons.list_alt, "Order Details", () {}),
-                    _menuItem(Icons.notifications_none, "Notification", () {}),
-                    _menuItem(Icons.qr_code, "QR Scan", () {}),
+                    _menuItem(Icons.money, "Report Issues", () {
+                      if (user == null) {
+                        showSnackBar(
+                          context,
+                          'Please login to access the feature',
+                        );
+                        return;
+                      }
+
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder:
+                              (context) => RefundHistoryScreen(userId: user.id),
+                        ),
+                      );
+                    }),
+                    // _menuItem(Icons.restaurant, "Reservation", () {
+                    //   if (user == null) {
+                    //     showSnackBar(
+                    //       context,
+                    //       'Please login to access the feature',
+                    //     );
+                    //     return;
+                    //   }
+                    //   Navigator.of(context).push(
+                    //     MaterialPageRoute(
+                    //       builder: (context) => ReservationHistoryScreen(),
+                    //     ),
+                    //   );
+                    // }),
                     _menuItem(Icons.location_on_outlined, "Address", () {
-                        if (user == null) {
+                      if (user == null) {
                         showSnackBar(
                           context,
                           'Please login to access the feature',
@@ -224,7 +275,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       }
                       Navigator.of(context).pushNamed(MapLocation.routeName);
                     }),
-                    _menuItem(Icons.message_outlined, "Message", () {}),
+                    _menuItem(Icons.store, "Resturant Hours", () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => StoreHoursScreen(),
+                        ),
+                      );
+                    }),
                     ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.pink[50],

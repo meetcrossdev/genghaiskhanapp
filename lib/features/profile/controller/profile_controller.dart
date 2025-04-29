@@ -13,7 +13,10 @@ final userFetchProvider = StreamProvider((ref) {
   return postController.fetchUsers();
 });
 
-final userFavoritesProvider = StreamProvider.family<List<MenuItem>, String>((ref, uid) {
+final userFavoritesProvider = StreamProvider.family<List<MenuItem>, String>((
+  ref,
+  uid,
+) {
   final controller = ref.watch(userProfileControllerProvider.notifier);
   return controller.fetchUserFavorites(uid);
 });
@@ -25,7 +28,6 @@ final userFavoritesProvider = StreamProvider.family<List<MenuItem>, String>((ref
 //   final profileController = ref.watch(userProfileControllerProvider.notifier);
 //   return profileController.fetchUserFavorites(user.id);
 // });
-
 
 final userProfileControllerProvider =
     StateNotifierProvider<UserProfileController, bool>(
@@ -73,33 +75,34 @@ class UserProfileController extends StateNotifier<bool> {
   }
 
   void editProfile({
-    required File? profileFile,
+    //required File? profileFile,
     required BuildContext context,
     required String name,
     required String email,
     required String phoneno,
-    required String cnic,
+    required String dob,
   }) async {
     state = true;
     UserModel user = _ref.read(userProvider)!;
-    if (profileFile != null) {
-      final res = await _storageRepository.storeFile(
-        path: 'users/profile',
-        id: user.id,
-        file: profileFile,
-      );
-      res.fold(
-        (l) => showSnackBar(context, l.message),
-        (r) => user = user.copyWith(profilePic: r),
-      );
-    }
+    // if (profileFile != null) {
+    //   final res = await _storageRepository.storeFile(
+    //     path: 'users/profile',
+    //     id: user.id,
+    //     file: profileFile,
+    //   );
+    //   res.fold(
+    //     (l) => showSnackBar(context, l.message),
+    //     (r) => user = user.copyWith(profilePic: r),
+    //   );
+    // }
 
-    user = user.copyWith(name: name, phoneNo: phoneno);
+    user = user.copyWith(name: name, phoneNo: phoneno, dob: dob);
     final res = await _userProfileRepository.editProfile(user);
     state = false;
     res.fold((l) => showSnackBar(context, l.message), (r) {
       _ref.read(userProvider.notifier).update((state) => user);
-      // Navigator.of(context).pop();
+      showSnackBar(context, 'User Updated Successfully');
+      Navigator.of(context).pop();
     });
   }
 
@@ -115,6 +118,18 @@ class UserProfileController extends StateNotifier<bool> {
     state = true;
 
     final res = await _userProfileRepository.updateStatus(id, status);
+    state = false;
+    res.fold((l) => showSnackBar(context, l.message), (r) {});
+  }
+
+  Future<void> updateLoyaltyPoints({
+    required String id,
+    required int points,
+    required BuildContext context,
+  }) async {
+    state = true;
+
+    final res = await _userProfileRepository.updateLoyaltyPoints(id, points);
     state = false;
     res.fold((l) => showSnackBar(context, l.message), (r) {});
   }
@@ -148,16 +163,14 @@ class UserProfileController extends StateNotifier<bool> {
     res.fold((l) => showSnackBar(context, l.message), (r) {});
   }
 
-Stream<List<MenuItem>> fetchUserFavorites(String uid) {
-  return _userProfileRepository.getUserFavoritesStream(uid).map(
-    (either) => either.fold(
-      (failure) {
-        debugPrint("Error fetching favorites: ${failure.message}");
-        return [];
-      },
-      (favorites) => favorites,
-    ),
-  );
-}
-
+  Stream<List<MenuItem>> fetchUserFavorites(String uid) {
+    return _userProfileRepository
+        .getUserFavoritesStream(uid)
+        .map(
+          (either) => either.fold((failure) {
+            debugPrint("Error fetching favorites: ${failure.message}");
+            return [];
+          }, (favorites) => favorites),
+        );
+  }
 }

@@ -9,12 +9,13 @@ class UserModel {
   final String profilePic;
   final List<String>
   favoriteDishes; // Updated to store favorite restaurant dishes
-
+  final String? status;
   final String? deviceToken;
   final String? address; // New: User's delivery address
   final String role; // New: User role (customer, admin, chef, etc.)
   final int loyaltyPoints; // New: Points for discounts/rewards
   final List<String> orderHistory; // New: Stores past orders
+  final String dob;
 
   UserModel({
     required this.id,
@@ -29,7 +30,9 @@ class UserModel {
     required this.role,
     required this.loyaltyPoints,
     required this.orderHistory,
-  });
+    required this.dob,
+    String? status,
+  }) : status = status ?? "Active";
 
   /// Convert JSON to UserModel
   factory UserModel.fromMap(Map<String, dynamic> json) {
@@ -46,6 +49,8 @@ class UserModel {
       role: json['role'] as String? ?? "customer", // Default role is 'customer'
       loyaltyPoints: json['loyaltyPoints'] as int? ?? 0, // Default 0 points
       orderHistory: List<String>.from(json['orderHistory'] ?? []),
+      dob: json['dob'] ?? '',
+      status: json['status'] ?? '',
     );
   }
 
@@ -64,6 +69,8 @@ class UserModel {
       'role': role,
       'loyaltyPoints': loyaltyPoints,
       'orderHistory': orderHistory,
+      'dob': dob,
+      'status': status,
     };
   }
 
@@ -95,6 +102,7 @@ class UserModel {
     int? loyaltyPoints,
     List<String>? orderHistory,
     List<String>? favoriteDishes,
+    String? dob,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -108,6 +116,7 @@ class UserModel {
       role: role ?? this.role,
       loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
       orderHistory: orderHistory ?? this.orderHistory,
+      dob: dob ?? this.dob,
     );
   }
 }

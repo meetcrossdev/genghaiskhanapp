@@ -2,27 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>NSLocationWhenInUseUsageDescription</key>
-<string>We need your location to show nearby places</string>
-
-<key>NSLocationAlwaysUsageDescription</key>
-<string>We need your location to show nearby places</string>
-
-<key>NSLocationWhenInUseUsageDescription</key>
-<string>We use your location to show relevant data.</string>
-
-<key>UIBackgroundModes</key>
+<key>com.apple.developer.applesignin</key>
 <array>
-    <string>location</string>
+  <string>Default</string>
 </array>
 
-<key>GMSApiKey</key>
-<string>AIzaSyDYtn83aed8w84MFMGZRGnBAFRFvbvW9MM</string>
-
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Gzresturent</string>
+	<string>GKBBQ</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -30,17 +20,57 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>gzresturent</string>
+	<string>GKBBQ</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.60189244962-8pbj9bvgjcn92av4m5g4fiih6fpjkeuj</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GMSApiKey</key>
+	<string>AIzaSyDYtn83aed8w84MFMGZRGnBAFRFvbvW9MM</string>
+	<key>GoogleService-Info</key>
+	<dict>
+		<key>CLIENT_ID</key>
+		<string>60189244962-cp8hg8udqv3jq366unu0ja9s770kfmaq.apps.googleusercontent.com</string>
+	</dict>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>We need your location to get your current address for delivery</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location to show relevant data.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>We need your location to get your current address for delivery.</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>This app needs access to your photo library for picking images.</string>
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>This app needs access to save images to your photo library.</string>
+<key>NSCameraUsageDescription</key>
+<string>This app needs access to your camera to take pictures for your profile or orders.</string>
+<key>NSUserNotificationUsageDescription</key>
+<string>This app uses notifications to send you order updates and promotional messages.</string>
+
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -58,25 +88,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>CFBundleURLTypes</key>
-<array>
-    <dict>
-        <key>CFBundleTypeRole</key>
-        <string>Editor</string>
-        <key>CFBundleURLSchemes</key>
-        <array>
-            <string>com.googleusercontent.apps.60189244962-8pbj9bvgjcn92av4m5g4fiih6fpjkeuj</string>
-        </array>
-    </dict>
-</array>
-<key>GoogleService-Info</key>
+
+	<key>NSAppTransportSecurity</key>
 <dict>
-    <key>CLIENT_ID</key>
-    <string>60189244962-cp8hg8udqv3jq366unu0ja9s770kfmaq.apps.googleusercontent.com</string>
+  <key>NSAllowsArbitraryLoads</key>
+  <true/>
 </dict>
 
 </dict>

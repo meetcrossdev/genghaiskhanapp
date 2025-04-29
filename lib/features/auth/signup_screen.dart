@@ -19,6 +19,7 @@ class SignupScreen extends ConsumerStatefulWidget {
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   File? profileImage;
+   final TextEditingController dobController = TextEditingController();
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController phonenoController = TextEditingController();
@@ -100,6 +101,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           password: passwordController.text,
           context: context,
           devicetoken: mydevicetoken,
+          dob:dobController.text,
         );
   }
 
@@ -157,6 +159,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               SizedBox(height: 10.h),
               Text('Email', style: TextStyle(fontSize: 16.sp)),
               AuthTextField(title: 'email', controller: emailController),
+              SizedBox(height: 20.h),
+              Text('DOB', style: TextStyle(fontSize: 16.sp)),
+              AuthTextField(title: 'dob', controller: dobController),
               SizedBox(height: 10.h),
               Text('Password', style: TextStyle(fontSize: 16.sp)),
               AuthTextField(

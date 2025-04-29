@@ -59,10 +59,18 @@ class OrderController extends StateNotifier<bool> {
   }
 
   Stream<List<OrderModel>> fetchUserOrders(String userId) {
-    return _orderRepository.fetchUserOrders(userId);
+    return _orderRepository.fetchUserOrders(userId).map((orders) {
+      // Sort orders by createdAt descending (latest first)
+      orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return orders;
+    });
   }
 
   Stream<List<OrderModel>> fetchAllOrders() {
-    return _orderRepository.fetchAllOrders();
+    return _orderRepository.fetchAllOrders().map((orders) {
+      // Sort orders by createdAt descending (latest first)
+      orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return orders;
+    });
   }
 }

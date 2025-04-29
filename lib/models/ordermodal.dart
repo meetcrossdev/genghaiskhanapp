@@ -14,11 +14,16 @@ class OrderModel {
   final Timestamp createdAt; // Timestamp when the order was placed
   final Timestamp? completedAt; // Timestamp when the order was completed
   final String? additionalNotes;
-   // New Field: Order Status Progress
+  // New Field: Order Status Progress
   final List<OrderStep> orderSteps; // Tracks each order stage
   final String trackid;
+  final String? paymentIntentId;
+  final String? paymentStatus;
+  final String? tax;
+  final String? orderType;
+  final String? deliveryTrackingUrl;
 
- OrderModel({
+  OrderModel({
     required this.id,
     required this.userId,
     required this.items,
@@ -32,6 +37,11 @@ class OrderModel {
     this.additionalNotes,
     required this.orderSteps, // New field
     required this.trackid,
+    this.paymentIntentId,
+    this.paymentStatus,
+    this.tax,
+    this.orderType,
+    this.deliveryTrackingUrl,
   });
 
   // Convert Firestore data to OrderModel
@@ -52,10 +62,15 @@ class OrderModel {
       completedAt: map['completedAt'],
       additionalNotes: map['additionalNotes'],
       trackid: map['trackid'],
-      orderSteps: (map['orderSteps'] as List<dynamic>)
-          .map((step) => OrderStep.fromMap(step))
-          .toList(),
-
+      paymentIntentId: map['paymentIntentId'],
+      paymentStatus: map['paymentStatus'],
+      tax: map['tax'],
+      orderType: map['orderType'],
+      deliveryTrackingUrl: map['deliveryTrackingUrl'],
+      orderSteps:
+          (map['orderSteps'] as List<dynamic>)
+              .map((step) => OrderStep.fromMap(step))
+              .toList(),
     );
   }
 
@@ -73,36 +88,30 @@ class OrderModel {
       'createdAt': createdAt,
       'completedAt': completedAt,
       'additionalNotes': additionalNotes,
-      'trackid':trackid,
+      'trackid': trackid,
       'orderSteps': orderSteps.map((step) => step.toMap()).toList(),
+      'paymentIntentId': paymentIntentId,
+      'paymentStatus': paymentStatus,
+      'tax': tax,
+      'deliveryTrackingUrl': deliveryTrackingUrl,
+      'orderType': orderType,
     };
   }
 }
-
-
 
 class OrderStep {
   final String step; // Example: "Order Received", "Order In Making"
   final Timestamp? timestamp; // Timestamp when the step was completed
 
-  OrderStep({
-    required this.step,
-    this.timestamp,
-  });
+  OrderStep({required this.step, this.timestamp});
 
   // Convert Firestore data to OrderStep
   factory OrderStep.fromMap(Map<String, dynamic> map) {
-    return OrderStep(
-      step: map['step'],
-      timestamp: map['timestamp'],
-    );
+    return OrderStep(step: map['step'], timestamp: map['timestamp']);
   }
 
   // Convert OrderStep to Firestore data
   Map<String, dynamic> toMap() {
-    return {
-      'step': step,
-      'timestamp': timestamp,
-    };
+    return {'step': step, 'timestamp': timestamp};
   }
 }

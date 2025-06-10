@@ -8,20 +8,31 @@ import 'package:gzresturent/core/type_dfs.dart';
 
 import '../../../models/menu_items.dart';
 
+
+
+
+// Riverpod provider for MenuRepository
+// It injects Firestore dependency for use inside the repository
 final menuRepositoryProvider = Provider(
   (ref) => MenuRepository(
     firebaseFirestore: ref.watch(firestoreProvider),
   ),
 );
 
+// Repository for handling all Firestore operations related to menu items
 class MenuRepository {
   final FirebaseFirestore _firebaseFirestore;
+
+  // Constructor to inject the Firestore instance
   MenuRepository({required FirebaseFirestore firebaseFirestore})
       : _firebaseFirestore = firebaseFirestore;
 
+  // Reference to the 'menu' collection in Firestore
   CollectionReference get _menuCollection =>
       _firebaseFirestore.collection(FirebaseConstants.menuCollection);
 
+  /// Adds a new menu item to Firestore
+  /// The document ID is the menu item's name
   FutureVoid addMenuItem(MenuModel menuItem) async {
     try {
       return right(
@@ -34,6 +45,8 @@ class MenuRepository {
     }
   }
 
+  /// Updates an existing menu item in Firestore
+  /// It uses the menu item's name as the document ID
   FutureVoid updateMenuItem(MenuModel menuItem) async {
     try {
       return right(
@@ -46,6 +59,7 @@ class MenuRepository {
     }
   }
 
+  /// Deletes a menu item from Firestore using its document ID
   FutureVoid deleteMenuItem(String id) async {
     try {
       return right(
@@ -58,18 +72,21 @@ class MenuRepository {
     }
   }
 
+  /// Fetches all menu items from Firestore as a real-time stream
+  /// Each document is converted into a `MenuModel`
   Stream<List<MenuModel>> fetchMenuItems() {
     return _menuCollection.snapshots().map((event) {
       return event.docs.map((doc) {
         try {
           final data = doc.data() as Map<String, dynamic>;
-        //  print("Fetched Data: $data"); // Debugging log
+          // Convert the Firestore document to a MenuModel object
           return MenuModel.fromJson(data);
         } catch (error) {
+          // Log and skip documents that fail to parse
           print("Error parsing document: ${doc.id}, Error: $error");
-          return null; // Handle errors gracefully
+          return null;
         }
-      }).whereType<MenuModel>().toList(); // Removes null values
+      }).whereType<MenuModel>().toList(); // Filters out null values
     });
   }
 }

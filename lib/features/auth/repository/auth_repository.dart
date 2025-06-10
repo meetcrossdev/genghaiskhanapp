@@ -21,6 +21,7 @@ import '../../../core/provider/storage_provider.dart';
 import '../../../core/type_dfs.dart';
 import '../../../core/utility.dart';
 
+// Provides an instance of AuthRepository using Riverpod dependency injection
 final authRepositoryProvider = Provider(
   (ref) => AuthRepository(
     firestore: ref.read(firestoreProvider),
@@ -30,6 +31,7 @@ final authRepositoryProvider = Provider(
   ),
 );
 
+// Repository class to handle all authentication-related functionality
 class AuthRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -46,12 +48,16 @@ class AuthRepository {
        _googleSignIn = googleSignIn,
        _storageRepository = storageRepository;
 
+  // Getter for the users collection in Firestore
   CollectionReference get users =>
       _firestore.collection(FirebaseConstants.usersCollection);
 
+  // Updates the online status of the current user in Firestore
   void setuserstate(bool isonline) async {
     await users.doc(_auth.currentUser!.uid).update({'online': isonline});
   }
+
+  // Fetches the currently signed-in user's data from Firestore
 
   Future<UserModel?> getCurrentUserdata() async {
     var userdata =
@@ -66,6 +72,7 @@ class AuthRepository {
     return user;
   }
 
+  // Returns a real-time stream of a specific user's data
   Stream<UserModel> userdata(String userid) {
     return _firestore
         .collection('users')
@@ -74,6 +81,7 @@ class AuthRepository {
         .map((event) => UserModel.fromMap(event.data()!));
   }
 
+  // Handles Google Sign-In and user registration or login
   FutureEither<UserModel?> googleSignIn(String devicetoken) async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -148,6 +156,7 @@ class AuthRepository {
     }
   }
 
+  // Handles user registration with email and password
   Future<Either<Failure, UserModel?>> signUpWithEmailAndPassword(
     String email,
     String name,
@@ -183,7 +192,7 @@ class AuthRepository {
         name: name,
         profilePic:
             profileImage ??
-            'https://external-preview.redd.it/5kh5OreeLd85QsqYO1Xz_4XSLYwZntfjqou-8fyBFoE.png?auto=webp&s=dbdabd04c399ce9c761ff899f5d38656d1de87c2',
+            'https://firebasestorage.googleapis.com/v0/b/genghis-khan-restaurant.firebasestorage.app/o/playstore.png?alt=media&token=6b4780e9-621e-4e3c-af04-d5231f8f50ba',
         email: userCredential.user!.email!,
         phoneNo: phone,
         favoriteDishes: [], // Default empty list
@@ -206,6 +215,8 @@ class AuthRepository {
       return left(Failure(e.toString()));
     }
   }
+
+  // Handles login using email and password
 
   FutureEither<UserModel?> loginWithEmailAndPassword(
     String email,
@@ -254,8 +265,9 @@ class AuthRepository {
     }
   }
 
+  // Stream to listen to changes in auth state (sign-in/sign-out)
   Stream<User?> get authStateChnage => _auth.authStateChanges();
-
+  // Fetches a specific user's data once (not real-time)
   Stream<UserModel?> getUserData(String uid) {
     return users.doc(uid).snapshots().map((event) {
       final data = event.data();
@@ -286,6 +298,8 @@ class AuthRepository {
     }
   }
 
+  // Fetches all users from Firestore
+
   Future<List<UserModel>> fetchallUsers() async {
     try {
       final querySnapshot = await users.get();
@@ -306,6 +320,7 @@ class AuthRepository {
     }
   }
 
+  //user signup using apple signin
   FutureEither<UserModel?> appleSignIn(String devicetoken) async {
     try {
       // final rawNonce = _generateNonce();
@@ -366,21 +381,7 @@ class AuthRepository {
     }
   }
 
-  String _generateNonce([int length = 32]) {
-    final charset =
-        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-    final random = math.Random.secure();
-    return List.generate(
-      length,
-      (_) => charset[random.nextInt(charset.length)],
-    ).join();
-  }
-
-  String _sha256ofString(String input) {
-    final bytes = utf8.encode(input);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
+  // Signs out the user from both FirebaseAuth and GoogleSignIn
 
   void signOut() async {
     await _googleSignIn.signOut();

@@ -12,9 +12,11 @@ import 'package:loading_indicator/loading_indicator.dart';
 
 import '../../../models/cart.dart';
 import '../../auth/controller/auth_controller.dart';
-
+// A ConsumerStatefulWidget that displays a list of user's favorite items
 class FavouritesScreen extends ConsumerStatefulWidget {
   const FavouritesScreen({super.key});
+
+  // Route name for navigation
   static const routeName = '/favorite-screen';
 
   @override
@@ -25,9 +27,11 @@ class FavouritesScreen extends ConsumerStatefulWidget {
 class _FavouritesScreenState extends ConsumerState<FavouritesScreen> {
   @override
   Widget build(BuildContext context) {
+    // Watch the userFavoritesProvider with the current user's UID
     return ref
         .watch(userFavoritesProvider(FirebaseAuth.instance.currentUser!.uid))
         .when(
+          // When data is successfully fetched
           data: (data) {
             return Scaffold(
               appBar: AppBar(
@@ -39,6 +43,7 @@ class _FavouritesScreenState extends ConsumerState<FavouritesScreen> {
               ),
               body: Column(
                 children: [
+                  // Expandable section containing the favorite items grid
                   Expanded(
                     child: SingleChildScrollView(
                       padding: EdgeInsets.symmetric(
@@ -47,30 +52,34 @@ class _FavouritesScreenState extends ConsumerState<FavouritesScreen> {
                       ),
                       child: Column(
                         children: [
-                          // FoodCard(),
+                          // Grid view for displaying favorite food items
                           GridView.builder(
-                            physics:
-                                NeverScrollableScrollPhysics(), // Prevents internal scrolling
-                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(), // Disable inner scrolling
+                            shrinkWrap: true, // Let GridView take minimal height
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2, // 2 columns
+                                  crossAxisCount: 2, // 2 items per row
                                   crossAxisSpacing: 10,
                                   mainAxisSpacing: 10,
                                   childAspectRatio:
-                                      0.47.sp, // Adjust for better fit
+                                      0.47.sp, // Controls item height-to-width ratio
                                 ),
-                            itemCount: data.length, // Show exactly 2 items
+                            itemCount: data.length, // Total favorite items
                             itemBuilder: (context, index) {
+                              // Render each favorite item using a reusable FoodCard widget
                               return FoodCard(menuItem: data[index], ref: ref);
                             },
                           ),
 
                           SizedBox(height: 20),
+
+                          // Suggestive message when user wants to explore more
                           Text(
                             "Looking for something else?",
                             style: TextStyle(color: Colors.grey, fontSize: 14),
                           ),
+
+                          // Highlight suggestion to explore categories
                           Text.rich(
                             TextSpan(
                               text: "try searching to explore more  ",
@@ -89,7 +98,8 @@ class _FavouritesScreenState extends ConsumerState<FavouritesScreen> {
                               ],
                             ),
                           ),
-                          SizedBox(height: 100),
+
+                          SizedBox(height: 100), // Extra spacing at the bottom
                         ],
                       ),
                     ),
@@ -98,14 +108,17 @@ class _FavouritesScreenState extends ConsumerState<FavouritesScreen> {
               ),
             );
           },
-          loading:
-              () => const Scaffold(
-                body: Center(
-                  child: LoadingIndicator(
-                    indicatorType: Indicator.ballClipRotatePulse,
-                  ),
-                ),
+
+          // Display loading animation while fetching favorites
+          loading: () => const Scaffold(
+            body: Center(
+              child: LoadingIndicator(
+                indicatorType: Indicator.ballClipRotatePulse,
               ),
+            ),
+          ),
+
+          // Display error message if fetching fails
           error: (err, stack) {
             log('error is ${err}');
             return Scaffold(body: Center(child: Text('Error: $err')));
@@ -113,6 +126,7 @@ class _FavouritesScreenState extends ConsumerState<FavouritesScreen> {
         );
   }
 }
+
 
 class FoodCard extends StatefulWidget {
   const FoodCard({super.key, required this.menuItem, required this.ref});
@@ -124,10 +138,13 @@ class FoodCard extends StatefulWidget {
 }
 
 class _FoodCardState extends State<FoodCard> {
+  // Holds the current quantity selected for the item
   int _quantity = 1;
+
   @override
   Widget build(BuildContext context) {
     return Container(
+      // Main card container with rounded corners and subtle shadow
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(15),
@@ -144,7 +161,10 @@ class _FoodCardState extends State<FoodCard> {
         children: [
           Stack(
             children: [
+              // Provide height space for the image section
               SizedBox(height: 175.h),
+
+              // Display the food image with rounded corners
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(
@@ -154,11 +174,14 @@ class _FoodCardState extends State<FoodCard> {
                   fit: BoxFit.cover,
                 ),
               ),
+
+              // Favorite button positioned at the top right corner
               Positioned(
                 top: 8,
                 right: 8,
                 child: GestureDetector(
                   onTap: () {
+                    // Update user favorites in backend
                     widget.ref
                         .read(userProfileControllerProvider.notifier)
                         .updateUserFavorite(
@@ -167,7 +190,7 @@ class _FoodCardState extends State<FoodCard> {
                           context,
                         );
 
-                    // Manually trigger a state update for userProvider
+                    // Update userProvider locally to reflect favorite change
                     widget.ref.read(userProvider.notifier).update((user) {
                       if (user == null) return null;
 
@@ -191,6 +214,8 @@ class _FoodCardState extends State<FoodCard> {
                   ),
                 ),
               ),
+
+              // Quantity selector at the bottom-right corner of the image
               Positioned(
                 bottom: 1,
                 right: 8,
@@ -202,6 +227,7 @@ class _FoodCardState extends State<FoodCard> {
                   ),
                   child: Row(
                     children: [
+                      // Decrease quantity button
                       InkWell(
                         onTap: () {
                           if (_quantity > 1) {
@@ -213,6 +239,8 @@ class _FoodCardState extends State<FoodCard> {
                         child: QuantityButton(icon: Icons.remove),
                       ),
                       SizedBox(width: 5),
+
+                      // Show current quantity
                       Text(
                         _quantity.toString(),
                         style: TextStyle(
@@ -221,6 +249,8 @@ class _FoodCardState extends State<FoodCard> {
                         ),
                       ),
                       SizedBox(width: 5),
+
+                      // Increase quantity button
                       InkWell(
                         onTap: () {
                           setState(() {
@@ -235,7 +265,10 @@ class _FoodCardState extends State<FoodCard> {
               ),
             ],
           ),
+
           SizedBox(height: 10),
+
+          // Display item name and verified icon
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
             child: Row(
@@ -251,10 +284,14 @@ class _FoodCardState extends State<FoodCard> {
               ],
             ),
           ),
-          Spacer(),
+
+          Spacer(), // Pushes the price and add-to-cart button to the bottom
+
+          // Price and "Add To Cart" button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Show price
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                 child: Text(
@@ -262,6 +299,8 @@ class _FoodCardState extends State<FoodCard> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
+
+              // Add the item with selected quantity to the cart
               TextButton(
                 onPressed: () {
                   final cartController = widget.ref.read(

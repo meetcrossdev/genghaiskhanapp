@@ -155,8 +155,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                 data
                     .where(
                       (order) =>
-                          order.status.toLowerCase() == "order received" ||
-                          order.status.toLowerCase() == "pending",
+                          order.status.toLowerCase() == "order received"
                     )
                     .toList();
 
@@ -256,7 +255,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                     .where(
                       (order) =>
                           order.status.toLowerCase() == "delivered" ||
-                          order.status.toLowerCase() == "done",
+                          order.status.toLowerCase() == "completed",
                     )
                     .toList();
 
@@ -310,7 +309,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                       .where(
                         (order) =>
                             order.status.toLowerCase() == "delivered" ||
-                            order.status.toLowerCase() == "done",
+                            order.status.toLowerCase() == "completed",
                       )
                       .toList();
 

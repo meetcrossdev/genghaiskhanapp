@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gzresturent/core/common/loader.dart';
 import 'package:gzresturent/core/utility.dart';
 import 'package:gzresturent/features/auth/controller/auth_controller.dart';
 import 'package:gzresturent/features/home/controller/store_hours_controller.dart';
@@ -21,7 +22,7 @@ class NavScreen extends ConsumerStatefulWidget {
 
 class _NavScreenState extends ConsumerState<NavScreen> {
   int _selectedIndex = 0;
-
+  bool isFetching = false;
   final List<Widget> _pages = [
     HomeScreen(), // Replace with actual screens
     MenuScreen(),
@@ -40,6 +41,22 @@ class _NavScreenState extends ConsumerState<NavScreen> {
 
     setState(() {
       _selectedIndex = index;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getData();
+  }
+
+  getData() async {
+    setState(() {
+      isFetching = true;
+    });
+    await loadingIndicator();
+    setState(() {
+      isFetching = false;
     });
   }
 
@@ -63,6 +80,17 @@ class _NavScreenState extends ConsumerState<NavScreen> {
             date.month == todayNormalized.month &&
             date.day == todayNormalized.day,
       );
+    }
+    if (isFetching) {
+      return Scaffold(
+        body: Center(
+          child: LoadingIndicator(indicatorType: Indicator.ballClipRotatePulse),
+        ),
+      );
+    }
+
+    if (Globals.isLoading) {
+      return Loadings();
     }
 
     return Scaffold(

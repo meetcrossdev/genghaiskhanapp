@@ -42,8 +42,12 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
   late Map<String, bool> _isOpen = {
     for (var day in defaultOpeningTimes.keys) day: true,
   };
-  late Map<String, TimeOfDay> _openingTimes = Map.from(defaultOpeningTimes);
-  late Map<String, TimeOfDay> _closingTimes = Map.from(defaultClosingTimes);
+  late Map<String, TimeOfDay> _openingTimes = Map.from(
+    defaultOpeningTimes,
+  ); //display openaing
+  late Map<String, TimeOfDay> _closingTimes = Map.from(
+    defaultClosingTimes,
+  ); //display closing time
 
   bool _isLoading = true;
 
@@ -53,6 +57,7 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
     _fetchStoreHours();
   }
 
+  //fetching the store hours from server
   void _fetchStoreHours() {
     ref
         .read(storeHoursProvider(storeId))
@@ -84,68 +89,20 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
     return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
-  Future<void> _selectTime(
-    BuildContext context,
-    String day,
-    bool isOpening,
-  ) async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: isOpening ? _openingTimes[day]! : _closingTimes[day]!,
-    );
-
-    if (pickedTime != null) {
-      setState(() {
-        if (isOpening) {
-          _openingTimes[day] = pickedTime;
-        } else {
-          _closingTimes[day] = pickedTime;
-        }
-      });
-    }
-  }
-
-  void _saveStoreHours() {
-    final List<StoreHour> updatedHours =
-        _isOpen.keys.map((day) {
-          return StoreHour(
-            day: day,
-            openTime:
-                "${_openingTimes[day]!.hour}:${_openingTimes[day]!.minute}",
-            closeTime:
-                "${_closingTimes[day]!.hour}:${_closingTimes[day]!.minute}",
-            isClosed: !_isOpen[day]!,
-          );
-        }).toList();
-
-    ref
-        .read(storeHourControllerProvider.notifier)
-        .updateStoreHours(
-          hours: updatedHours,
-          context: context,
-          storeId: storeId,
-        );
-    ref
-        .read(storeHourControllerProvider.notifier)
-        .updateStoreStatus(context: context, isLive: true);
-  }
-
   @override
   Widget build(BuildContext context) {
-    // if (_isLoading) {
-    //   return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    // }
-
     return Scaffold(
-      backgroundColor: Color(0xfffafafa),
+      backgroundColor: Color(0xfffafafa), // Light background for the screen
       appBar: AppBar(
-        backgroundColor: Apptheme.logoInsideColor,
+        backgroundColor: Apptheme.logoInsideColor, // Custom color from theme
         title: const Text("Store Hours", style: TextStyle(color: Colors.white)),
-
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(
+          color: Colors.white,
+        ), // White color for back button
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
+          // Detect if device is tablet or web
           bool isTablet = constraints.maxWidth > 600;
           bool isWeb = kIsWeb;
 
@@ -153,23 +110,24 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
             padding: const EdgeInsets.all(16.0),
             child:
                 isTablet || isWeb
+                    // Grid layout for tablet/web view
                     ? Column(
                       children: [
-                        // ElevatedButton(
-                        //   onPressed: () {},
-                        //   child: Text('Holidy '),
-                        // ),
                         Expanded(
                           child: GridView.count(
-                            crossAxisCount: 2,
-                            childAspectRatio: 2.6.sp,
+                            crossAxisCount: 2, // Two columns
+                            childAspectRatio:
+                                2.6.sp, // Adjust width/height ratio
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
-                            children: _buildStoreHoursList(isGrid: true),
+                            children: _buildStoreHoursList(
+                              isGrid: true,
+                            ), // Generate cards
                           ),
                         ),
                       ],
                     )
+                    // List layout for mobile view
                     : ListView(children: _buildStoreHoursList(isGrid: false)),
           );
         },
@@ -177,6 +135,7 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
     );
   }
 
+  // Builds a list of store hour cards (either for grid or list view)
   List<Widget> _buildStoreHoursList({required bool isGrid}) {
     return _isOpen.keys.map((day) {
       return Card(
@@ -188,6 +147,7 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Display the day (e.g., Monday, Tuesday)
               Text(
                 day,
                 style: const TextStyle(
@@ -198,21 +158,15 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Switch(
-                  //   value: _isOpen[day]!,
-                  //   onChanged: (value) {
-                  //     // setState(() {
-                  //     //   _isOpen[day] = value;
-                  //     // });
-                  //   },
-                  // ),
+                  // Status badge (Open/Closed)
                   Container(
                     padding: EdgeInsets.all(10),
-                    //  height: 20.h,
-                    // width: 40.w,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(5),
-                      color: _isOpen[day]! ? Colors.green : Colors.red,
+                      color:
+                          _isOpen[day]!
+                              ? Colors.green
+                              : Colors.red, // Green if open, red if closed
                     ),
                     child: Text(
                       _isOpen[day]! ? "Open" : "Closed",
@@ -222,6 +176,7 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
                 ],
               ),
               SizedBox(height: 15),
+              // Show time row only if the store is open
               if (_isOpen[day]!) _buildTimeRow(day),
             ],
           ),
@@ -230,23 +185,27 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
     }).toList();
   }
 
+  // Builds the time row with opening and closing time pickers
   Widget _buildTimeRow(String day) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // Opening time picker
         GestureDetector(
-          onTap: () {},
+          onTap: () {}, // You can add time picker logic here
           child: _buildTimePicker(_openingTimes[day]!),
         ),
-        const Text(" - "),
+        const Text(" - "), // Separator
+        // Closing time picker
         GestureDetector(
-          onTap: () {},
+          onTap: () {}, // You can add time picker logic here
           child: _buildTimePicker(_closingTimes[day]!),
         ),
       ],
     );
   }
 
+  // Builds a styled time display box
   Widget _buildTimePicker(TimeOfDay time) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -255,7 +214,9 @@ class _StoreHoursScreenState extends ConsumerState<StoreHoursScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        DateFormat.jm().format(DateTime(2024, 1, 1, time.hour, time.minute)),
+        DateFormat.jm().format(
+          DateTime(2024, 1, 1, time.hour, time.minute),
+        ), // Format time (e.g., 2:00 PM)
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),
     );

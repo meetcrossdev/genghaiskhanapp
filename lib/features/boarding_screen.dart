@@ -5,6 +5,8 @@ import 'package:gzresturent/features/home/screen/home_screen.dart';
 import 'package:gzresturent/features/onboarding/onboarding.dart';
 import 'package:gzresturent/nav_screen.dart';
 
+
+//The UI code for calling the boarding screen here .
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
   static const routeName = '/onboarding-screen';

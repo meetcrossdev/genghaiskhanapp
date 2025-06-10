@@ -1,6 +1,6 @@
 class Reservation {
   final String id;
-  final String customerId; // Can be empty if guest user
+  final String? customerId; // Can be empty if guest user
   final String customerName;
   final String contactNumber;
   final int numberOfGuests;

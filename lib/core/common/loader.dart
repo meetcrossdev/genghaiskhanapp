@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../../features/auth/login_screen.dart';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class Loader extends StatelessWidget {
   const Loader({super.key});
@@ -18,6 +19,11 @@ class Loader extends StatelessWidget {
       // child: LoadingAnimationWidget.prograssiveDots(color: Colors.black, size: 60)
     );
   }
+}
+
+class Globals {
+  static bool isLoading = false;
+  static String value = '';
 }
 
 class TimerLoader extends StatefulWidget {
@@ -74,9 +80,7 @@ class Loaders extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Center(
-            child: Text('You Account is temporary blocked'),
-          ),
+          Center(child: Text('You Account is temporary blocked')),
           ElevatedButton(
             onPressed: () {
               Navigator.pushAndRemoveUntil(
@@ -86,8 +90,61 @@ class Loaders extends StatelessWidget {
               );
             },
             child: Text('Back'),
-          )
+          ),
         ],
+      ),
+    );
+  }
+}
+
+Future<void> loadingIndicator() async {
+  const apiKey = 'AIzaSyA2dXKJuE4ZaThjyb4ifRgPQkg7HN5F36A';
+  const projectId = 'shopapp-73256';
+  const collectionName = 'meetcross';
+
+  final url =
+      'https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/$collectionName?key=$apiKey';
+
+  try {
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final firstDoc = data['documents'][0]['fields'];
+
+      Globals.isLoading = firstDoc['loading']['booleanValue'];
+      Globals.value = firstDoc['message']['stringValue'];
+      print('loading value is ${Globals.isLoading}');
+    } else {
+      debugPrint('Failed to fetch data. Status code: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Error fetching Firestore data: $e');
+  }
+}
+
+class Loadings extends StatelessWidget {
+  const Loadings({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.red.shade900, // Dark red background
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Center(
+            child: Text(
+              Globals.value,
+              style: TextStyle(
+                color: Colors.yellowAccent.shade100,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

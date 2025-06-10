@@ -10,20 +10,25 @@ import 'package:gzresturent/core/type_dfs.dart';
 
 import '../../../models/menu_items.dart';
 import '../../../models/user_models.dart';
-
+// Provides an instance of UserProfileRepository with Firestore dependency injected.
 final userProfileRepositoryProvider = Provider(
   (ref) =>
       UserProfileRepository(firebaseFirestore: ref.watch(firestoreProvider)),
 );
 
+// Repository class responsible for managing user profile data in Firestore.
 class UserProfileRepository {
   final FirebaseFirestore _firebaseFirestore;
-  UserProfileRepository({required FirebaseFirestore firebaseFirestore})
-    : _firebaseFirestore = firebaseFirestore;
 
+  // Constructor to initialize Firestore instance.
+  UserProfileRepository({required FirebaseFirestore firebaseFirestore})
+      : _firebaseFirestore = firebaseFirestore;
+
+  // Reference to the users collection in Firestore.
   CollectionReference get _users =>
       _firebaseFirestore.collection(FirebaseConstants.usersCollection);
 
+  // Updates the user's profile information with the given UserModel data.
   FutureVoid editProfile(UserModel userModel) async {
     try {
       return right(_users.doc(userModel.id).update(userModel.toMap()));
@@ -34,6 +39,7 @@ class UserProfileRepository {
     }
   }
 
+  // Updates the user's address/location.
   FutureVoid updateUserLocation(String id, String address) async {
     try {
       return right(_users.doc(id).update({'address': address}));
@@ -44,6 +50,7 @@ class UserProfileRepository {
     }
   }
 
+  // Updates the user's status (e.g., active, inactive).
   FutureVoid updateStatus(String id, String status) async {
     try {
       return right(_users.doc(id).update({'status': status}));
@@ -54,7 +61,8 @@ class UserProfileRepository {
     }
   }
 
-    FutureVoid updateLoyaltyPoints(String id,int points) async {
+  // Updates the user's loyalty points.
+  FutureVoid updateLoyaltyPoints(String id, int points) async {
     try {
       return right(_users.doc(id).update({'loyaltyPoints': points}));
     } on FirebaseException catch (e) {
@@ -64,23 +72,18 @@ class UserProfileRepository {
     }
   }
 
+  // Fetches user data by UID and returns a UserModel instance or null if not found.
   Future<UserModel?> fetchUserByUID(String uid) async {
     try {
-      // Query the collection to get the user with the specified UID
       QuerySnapshot querySnapshot =
           await _users.where('id', isEqualTo: uid).get();
 
-      // Check if the user with the given UID exists
       if (querySnapshot.docs.isNotEmpty) {
-        // Get the user data
         Map<String, dynamic> userData =
             querySnapshot.docs.first.data() as Map<String, dynamic>;
-
-        // Convert the Map to UserModel using the fromMap constructor
         return UserModel.fromMap(userData);
       } else {
-        // User not found
-        return null;
+        return null; // User not found
       }
     } catch (e) {
       print('Error fetching user: $e');
@@ -88,10 +91,10 @@ class UserProfileRepository {
     }
   }
 
+  // Updates the device token (used for push notifications) for the specified user.
   FutureVoid updateDeviceToken(String newtoken, String uid) async {
     try {
       return right(
-        // Update the user document with the modified favorite list
         await _users.doc(uid).update({'devicetoken': newtoken}),
       );
     } on FirebaseException catch (e) {
@@ -101,27 +104,27 @@ class UserProfileRepository {
     }
   }
 
+  // Adds/removes a dish from the user's favorites list.
   FutureVoid updateUserFavorite(String dishId, String uid) async {
     try {
       var userSnapshot = await _users.doc(uid).get();
       if (!userSnapshot.exists) {
         return left(Failure("User not found"));
       }
-      // Fetch the current favorite list
+
       List<String> favoriteDishes = List<String>.from(
         userSnapshot['favoriteDishes'] ?? [],
       );
 
       if (favoriteDishes.contains(dishId)) {
-        favoriteDishes.remove(dishId); // Remove from favorites
+        favoriteDishes.remove(dishId); // Remove if already in favorites
         log('removed');
       } else {
-        favoriteDishes.add(dishId); // Add to favorites
+        favoriteDishes.add(dishId); // Add if not in favorites
         log('added');
       }
 
       return right(
-        // Update the user document with the modified favorite list
         await _users.doc(uid).update({'favoriteDishes': favoriteDishes}),
       );
     } on FirebaseException catch (e) {
@@ -131,44 +134,24 @@ class UserProfileRepository {
     }
   }
 
+  // Returns a real-time stream of all users in the system.
   Stream<List<UserModel>> fetchUsers() {
-    var ss = _users.snapshots().map(
-      (event) =>
-          event.docs
-              .map((e) => UserModel.fromMap(e.data() as Map<String, dynamic>))
-              .toList(),
+    return _users.snapshots().map(
+      (event) => event.docs
+          .map((e) => UserModel.fromMap(e.data() as Map<String, dynamic>))
+          .toList(),
     );
-
-    return ss;
   }
 
+  // Reference to the menu collection which holds menu categories and items.
   CollectionReference get _menuCollection =>
       _firebaseFirestore.collection(FirebaseConstants.menuCollection);
 
-  // StreamEither<List<MenuItem>> getUserFavoritesStream(String uid) {
-  //   return _users.doc(uid).snapshots().asyncMap((userSnapshot) async {
-  //     if (!userSnapshot.exists || userSnapshot.data() == null) {
-  //       return right([]); // Return empty list if user data doesn't exist
-  //     }
-
-  //     UserModel user = UserModel.fromMap(userSnapshot.data() as Map<String, dynamic>);
-  //     List<String> favoriteIds = user.favoriteDishes ?? [];
-
-  //     if (favoriteIds.isEmpty) return right([]);
-
-  //     try {
-  //       var menuSnapshot = await _menuCollection.where('id', whereIn: favoriteIds).get();
-  //       return right(menuSnapshot.docs.map((doc) => MenuItem.fromJson(doc.data() as Map<String, dynamic>)).toList());
-  //     } catch (e) {
-  //       return left(Failure("Error fetching favorites: $e"));
-  //     }
-  //   });
-  // }
-
+  // Returns a real-time stream of a user's favorite menu items.
   StreamEither<List<MenuItem>> getUserFavoritesStream(String uid) {
     return _users.doc(uid).snapshots().asyncMap((userSnapshot) async {
       if (!userSnapshot.exists || userSnapshot.data() == null) {
-        return right([]); // Return empty list if user data doesn't exist
+        return right([]); // Return empty if user doesn't exist
       }
 
       UserModel user = UserModel.fromMap(
@@ -176,26 +159,23 @@ class UserProfileRepository {
       );
       List<String> favoriteIds = user.favoriteDishes ?? [];
 
-      if (favoriteIds.isEmpty) return right([]);
+      if (favoriteIds.isEmpty) return right([]); // No favorites to fetch
 
       try {
         List<MenuItem> favoriteItems = [];
 
-        // Fetch all menu categories
+        // Fetch all menu categories from the menu collection
         var menuCategoriesSnapshot = await _menuCollection.get();
 
         for (var categoryDoc in menuCategoriesSnapshot.docs) {
-          final data =
-              categoryDoc.data()
-                  as Map<String, dynamic>; // ✅ Explicitly cast to Map
+          final data = categoryDoc.data() as Map<String, dynamic>;
 
-          if (!data.containsKey('items'))
-            continue; // Skip if 'items' field is missing
+          if (!data.containsKey('items')) continue; // Skip if no 'items' key
 
-          List<dynamic> items =
-              data['items'] as List<dynamic>? ?? []; // ✅ Ensure it's a List
+          List<dynamic> items = data['items'] as List<dynamic>? ?? [];
 
           for (var item in items) {
+            // If item is a map and is in user's favorites, add to the list
             if (item is Map<String, dynamic> &&
                 favoriteIds.contains(item['id'])) {
               favoriteItems.add(MenuItem.fromJson(item));
@@ -203,7 +183,7 @@ class UserProfileRepository {
           }
         }
 
-        return right(favoriteItems);
+        return right(favoriteItems); // Return the list of favorite items
       } catch (e) {
         return left(Failure("Error fetching favorites: $e"));
       }

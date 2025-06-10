@@ -8,11 +8,13 @@ import '../../../models/menu_items.dart';
 import '../../../models/user_models.dart';
 import '../../auth/controller/auth_controller.dart';
 
+// Provides a stream of all users fetched by the UserProfileController.
 final userFetchProvider = StreamProvider((ref) {
   final postController = ref.watch(userProfileControllerProvider.notifier);
   return postController.fetchUsers();
 });
 
+// Provides a stream of favorite menu items for a specific user by UID.
 final userFavoritesProvider = StreamProvider.family<List<MenuItem>, String>((
   ref,
   uid,
@@ -21,14 +23,8 @@ final userFavoritesProvider = StreamProvider.family<List<MenuItem>, String>((
   return controller.fetchUserFavorites(uid);
 });
 
-// final userFavoritesProvider = StreamProvider<List<MenuItem>>((ref) {
-//   final user = ref.watch(userProvider);
-//   if (user == null) return Stream.value([]); // Return an empty stream if no user
-
-//   final profileController = ref.watch(userProfileControllerProvider.notifier);
-//   return profileController.fetchUserFavorites(user.id);
-// });
-
+// Provides the UserProfileController as a state notifier.
+// The boolean state can be used for loading indicators (e.g., true = loading).
 final userProfileControllerProvider =
     StateNotifierProvider<UserProfileController, bool>(
       (ref) => UserProfileController(
@@ -37,12 +33,6 @@ final userProfileControllerProvider =
         storageRepository: ref.watch(storageRepositoryProvider),
       ),
     );
-// final userFavoritesProvider = StateProvider<List<MenuItem>>((ref) => []);
-
-// final getUserPostProvider = StreamProvider.family(
-//   (ref, String uid) =>
-//       ref.read(userProfileControllerProvider.notifier).getUserPost(uid),
-// );
 
 class UserProfileController extends StateNotifier<bool> {
   final UserProfileRepository _userProfileRepository;
@@ -56,6 +46,8 @@ class UserProfileController extends StateNotifier<bool> {
        _ref = ref,
        _storageRepository = storageRepository,
        super(false);
+
+  // Toggles a dish as favorite for the user and updates the UI accordingly
 
   void updateUserFavorite(String id, String uid, BuildContext context) async {
     UserModel user = _ref.read(userProvider)!;
@@ -73,7 +65,7 @@ class UserProfileController extends StateNotifier<bool> {
       //  showSnackBar(context, 'Food is marked as favortie');
     });
   }
-
+ // Updates user profile data (excluding profile picture here)
   void editProfile({
     //required File? profileFile,
     required BuildContext context,
@@ -105,11 +97,11 @@ class UserProfileController extends StateNotifier<bool> {
       Navigator.of(context).pop();
     });
   }
-
+ // Fetches a stream of all users from Firestore
   Stream<List<UserModel>> fetchUsers() {
     return _userProfileRepository.fetchUsers();
   }
-
+  // Updates a user's status (e.g., active, offline)
   Future<void> updateStatus({
     required String id,
     required String status,
@@ -121,7 +113,7 @@ class UserProfileController extends StateNotifier<bool> {
     state = false;
     res.fold((l) => showSnackBar(context, l.message), (r) {});
   }
-
+  // Updates a user's loyalty points
   Future<void> updateLoyaltyPoints({
     required String id,
     required int points,
@@ -133,7 +125,7 @@ class UserProfileController extends StateNotifier<bool> {
     state = false;
     res.fold((l) => showSnackBar(context, l.message), (r) {});
   }
-
+// Updates a user's saved address/location
   Future<void> updateLocation({
     required String id,
     required String location,
@@ -147,7 +139,7 @@ class UserProfileController extends StateNotifier<bool> {
       showSnackBar(context, 'Location update successful');
     });
   }
-
+// Updates the device token for push notifications
   void updatedevicetoken({
     required String devicetoken,
     required String uid,
@@ -163,6 +155,7 @@ class UserProfileController extends StateNotifier<bool> {
     res.fold((l) => showSnackBar(context, l.message), (r) {});
   }
 
+ // Fetches user's favorite dishes and returns a stream of MenuItem list
   Stream<List<MenuItem>> fetchUserFavorites(String uid) {
     return _userProfileRepository
         .getUserFavoritesStream(uid)

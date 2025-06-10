@@ -11,6 +11,7 @@ import '../../../core/provider/firebase_provider.dart';
 import '../../../core/type_dfs.dart';
 import '../../../models/reservation.dart';
 
+// Provider to expose ReservationRepository via Riverpod
 final reservationRepositoryProvider = Provider(
   (ref) => ReservationRepository(firestore: ref.watch(firestoreProvider)),
 );
@@ -18,16 +19,19 @@ final reservationRepositoryProvider = Provider(
 class ReservationRepository {
   final FirebaseFirestore _firestore;
 
+  // Constructor injects the Firestore instance
   ReservationRepository({required FirebaseFirestore firestore})
-    : _firestore = firestore;
+      : _firestore = firestore;
 
+  // Reference to 'reservations' collection in Firestore
   CollectionReference get _reservationsCollection =>
       _firestore.collection(FirebaseConstants.reservationCollection);
 
+  // Reference to 'timeSlots' collection in Firestore
   CollectionReference get _timeSlotsCollection =>
       _firestore.collection(FirebaseConstants.timeSlotsCollection);
 
-  /// ✅ Add a new reservation
+  /// Adds a new reservation document to Firestore with the reservation ID as doc ID
   FutureVoid addReservation(Reservation reservation) async {
     try {
       log('adding reservation ');
@@ -42,7 +46,7 @@ class ReservationRepository {
     }
   }
 
-  /// ✅ Fetch all reservations for a restaurant
+  /// Streams all reservations for a specific restaurant ID
   Stream<List<Reservation>> fetchReservations(String restaurantId) {
     return _reservationsCollection
         .where('restaurantId', isEqualTo: restaurantId)
@@ -57,7 +61,7 @@ class ReservationRepository {
         });
   }
 
-  /// ✅ Fetch reservations for a specific user
+  /// Streams all reservations for a specific user (customer ID)
   Stream<List<Reservation>> fetchUserReservations(String userId) {
     return _reservationsCollection
         .where('customerId', isEqualTo: userId)
@@ -72,7 +76,7 @@ class ReservationRepository {
         });
   }
 
-  /// ✅ Update reservation status (Confirmed, Cancelled, etc.)
+  /// Updates the status field of a reservation (e.g., Confirmed, Cancelled)
   FutureVoid updateReservationStatus(
     String reservationId,
     String status,
@@ -89,6 +93,7 @@ class ReservationRepository {
     }
   }
 
+  /// Deletes a reservation document by its ID
   FutureVoid deleteReservation(String reservationId) async {
     try {
       await _reservationsCollection.doc(reservationId).delete();
@@ -100,7 +105,7 @@ class ReservationRepository {
     }
   }
 
-  /// ✅ Fetch all time slots
+  /// Streams all available time slots (for reservations)
   Stream<List<TimeSlot>> fetchTimeSlots() {
     return _timeSlotsCollection.snapshots().map((snapshot) {
       return snapshot.docs

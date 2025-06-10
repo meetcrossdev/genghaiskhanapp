@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gzresturent/core/constant/colors.dart';
 import 'package:gzresturent/features/auth/controller/auth_controller.dart';
-
+// A stateful widget with Riverpod's Consumer capabilities for watching state
 class RewardsScreen extends ConsumerStatefulWidget {
   const RewardsScreen({super.key});
   static const routeName = '/reward-screen';
+
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _RewardsScreenState();
 }
 
+// State class for RewardsScreen, including tab controller mixin
 class _RewardsScreenState extends ConsumerState<RewardsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
@@ -17,17 +19,22 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
   @override
   void initState() {
     super.initState();
+    // Initializing tab controller with one tab (Earn tab)
     _tabController = TabController(length: 1, vsync: this);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Watching userProvider to get current user state
     var user = ref.watch(userProvider);
+
     return Scaffold(
       appBar: AppBar(
         iconTheme: IconThemeData(color: Colors.white),
         backgroundColor: Apptheme.logoInsideColor,
         title: Text("Rewards", style: TextStyle(color: Colors.white)),
+
+        // TabBar showing the tabs (currently only "Earn" is used)
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.yellow,
@@ -35,23 +42,24 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
           unselectedLabelColor: Colors.white70,
           tabs: [
             Tab(text: "Earn"),
-            //  Tab(text: "Redeem"),
-            //  Tab(text: "Offers"),
+            // Future tabs can be added here (e.g., Redeem, Offers)
           ],
         ),
       ),
+
+      // Tab view for each tab; right now only Earn tab is active
       body: TabBarView(
         controller: _tabController,
         children: [
           _buildEarnTab(user!.loyaltyPoints),
-          // Center(child: Text("Redeem Page")),
-          // Center(child: Text("Offers Page")),
         ],
       ),
     );
   }
 
+  /// Builds the content of the "Earn" tab
   Widget _buildEarnTab(int points) {
+    // Calculate how many points are needed to reach the next reward threshold
     int nextRewardThreshold = ((points / 100).ceil()) * 100;
     int pointsToNextReward = nextRewardThreshold - points;
 
@@ -59,7 +67,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
       padding: EdgeInsets.all(16),
       child: Column(
         children: [
-          // Points Card
+          // Card displaying current user's points and progress
           Card(
             color: Apptheme.logoOutsideColor,
             shape: RoundedRectangleBorder(
@@ -70,6 +78,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Displaying total GK Points
                   Text(
                     points.toString(),
                     style: TextStyle(
@@ -78,6 +87,8 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
                       color: Colors.white,
                     ),
                   ),
+
+                  // Label below points
                   Text(
                     "GK POINTS®",
                     style: TextStyle(
@@ -85,9 +96,10 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   SizedBox(height: 8),
 
-                  /// 🟡 Dynamic Progress Bar to Next 100
+                  // Progress bar indicating progress to next reward (out of 100)
                   LinearProgressIndicator(
                     value: (points % 100) / 100,
                     backgroundColor: Colors.white38,
@@ -96,7 +108,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
 
                   SizedBox(height: 8),
 
-                  /// 🟡 Dynamic Message
+                  // Message showing how many points left to next reward
                   Text(
                     "$pointsToNextReward points to your next reward",
                     style: TextStyle(
@@ -108,9 +120,10 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
               ),
             ),
           ),
+
           SizedBox(height: 20),
 
-          // Earn Points with Receipt
+          // Card that allows user to claim points using a receipt
           SizedBox(
             width: double.infinity,
             child: Card(
@@ -122,13 +135,18 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
                 padding: EdgeInsets.all(16),
                 child: Column(
                   children: [
+                    // Prompt text
                     Text(
                       "ALREADY PLACED AN ORDER?",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 8),
+
+                    // Button to trigger receipt-based point earning (feature not implemented yet)
                     TextButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        // TODO: Implement receipt upload or entry
+                      },
                       icon: Icon(Icons.receipt, color: Colors.red),
                       label: Text(
                         "EARN POINTS WITH RECEIPT",
@@ -140,6 +158,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen>
               ),
             ),
           ),
+
           SizedBox(height: 20),
         ],
       ),

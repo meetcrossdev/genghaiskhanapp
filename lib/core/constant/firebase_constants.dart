@@ -9,6 +9,6 @@ class FirebaseConstants {
   static const reservationCollection = 'reservation';
   static const timeSlotsCollection = 'timeslot';
   static const adonsCollection = 'addons';
-  static const refundRequestsCollection='refundRequest';
+  static const refundRequestsCollection = 'refundRequest';
+  static const pushNotificationCollection = 'notification';
 }
-

@@ -55,6 +55,34 @@ exports.createPaymentIntent = functions.https.onRequest((req, res) => {
   });
 });
 
+exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
+  const { amount, currency } = req.body;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency,
+          product_data: {
+            name: 'Your Product',
+          },
+          unit_amount: parseInt(amount), // in cents
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: 'http://localhost:5000/payment-success', // ✅ Replace with your local dev success page
+      cancel_url: 'http://localhost:5000/payment-cancel',   // ✅ Replace with your local dev cancel page
+    });
+
+    res.status(200).json({ checkout_url: session.url, paymentIntentId: session.payment_intent });
+  } catch (e) {
+    console.error('Stripe Checkout Error:', e);
+    res.status(500).send({ error: e.message });
+  }
+});
+
 exports.refundPayment = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {

@@ -23,7 +23,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseMessaging.instance.requestPermission();
   Stripe.publishableKey =
-      'pk_test_51RBzTUHxu36eGrkMP3J0l5E0FbBHjFe5vD8qwJVzTEaPeKTMKwGMwTWxH5OyQs9oLKFqAZJvRKs1RbLl7mXiuM0g00RpGXBfPB';
+      'pk_live_51RBzTUHxu36eGrkMgWKdSCFFsAYYvFpgYB0MbTQnrMkRbYGFIzrOSsOpnJwhQ9cfI9kGMYM9I7nUv2V5cKCaVMby00GUv5SWmP';
   await Stripe.instance.applySettings();
   runApp(const ProviderScope(child: MyApp()));
 }

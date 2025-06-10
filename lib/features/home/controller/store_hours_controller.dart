@@ -5,29 +5,30 @@ import '../../../core/utility.dart';
 import '../../../models/store_hours.dart';
 import '../repository/store_hours_repository.dart';
 
-
+// StateNotifierProvider for managing store hours and loading state
 final storeHourControllerProvider =
     StateNotifierProvider<StoreHourController, bool>(
-      (ref) => StoreHourController(
-        storeHourRepository: ref.watch(storeHourRepositoryProvider),
-        ref: ref,
-      ),
-    );
+  (ref) => StoreHourController(
+    storeHourRepository: ref.watch(storeHourRepositoryProvider),
+    ref: ref,
+  ),
+);
 
+// StreamProvider to listen to store's live status (open/closed)
 final storeStatusProvider = StreamProvider<bool>((ref) {
   final controller = ref.watch(storeHourControllerProvider.notifier);
   return controller.fetchStoreStatus();
 });
 
-final storeHoursProvider = StreamProvider.family<List<StoreHour>, String>((
-  ref,
-  storeId,
-) {
-  final controller = ref.watch(storeHourControllerProvider.notifier);
-  return controller.fetchStoreHours(storeId);
-});
+// StreamProvider.family to fetch store hours for a specific store by storeId
+final storeHoursProvider = StreamProvider.family<List<StoreHour>, String>(
+  (ref, storeId) {
+    final controller = ref.watch(storeHourControllerProvider.notifier);
+    return controller.fetchStoreHours(storeId);
+  },
+);
 
-
+// StreamProvider for the list of holidays (dates)
 final holidaysProvider = StreamProvider<List<DateTime>>((ref) {
   final controller = ref.watch(storeHourControllerProvider.notifier);
   return controller.fetchHolidays();
@@ -40,26 +41,29 @@ class StoreHourController extends StateNotifier<bool> {
   StoreHourController({
     required StoreHourRepository storeHourRepository,
     required Ref ref,
-  }) : _storeHourRepository = storeHourRepository,
-       _ref = ref,
-       super(false);
+  })  : _storeHourRepository = storeHourRepository,
+        _ref = ref,
+        super(false); // false means not loading initially
 
+  /// Update store hours for a given storeId
   Future<void> updateStoreHours({
     required String storeId,
     required List<StoreHour> hours,
     required BuildContext context,
   }) async {
-    state = true;
+    state = true; // set loading true
 
     final res = await _storeHourRepository.updateStoreHours(storeId, hours);
-    state = false;
+
+    state = false; // set loading false
 
     res.fold(
-      (l) => showSnackBar(context, l.message),
-      (r) => showSnackBar(context, "Store hours updated successfully"),
+      (failure) => showSnackBar(context, failure.message),
+      (_) => showSnackBar(context, "Store hours updated successfully"),
     );
   }
 
+  /// Update store's live status (open/closed)
   Future<void> updateStoreStatus({
     required bool isLive,
     required BuildContext context,
@@ -67,23 +71,26 @@ class StoreHourController extends StateNotifier<bool> {
     state = true;
 
     final res = await _storeHourRepository.updateStoreLive(isLive);
+
     state = false;
 
     res.fold(
-      (l) => showSnackBar(context, l.message),
-      (r) => showSnackBar(context, "Store hours updated successfully"),
+      (failure) => showSnackBar(context, failure.message),
+      (_) => showSnackBar(context, "Store status updated successfully"),
     );
   }
 
+  /// Fetch store hours stream for a given storeId
   Stream<List<StoreHour>> fetchStoreHours(String storeId) {
     return _storeHourRepository.fetchStoreHours(storeId);
   }
 
+  /// Fetch store's live status stream
   Stream<bool> fetchStoreStatus() {
     return _storeHourRepository.fetchStoreStatus();
   }
 
-  // ✅ Add Holiday
+  /// Add a holiday date to the system
   Future<void> addHoliday({
     required DateTime holidayDate,
     required BuildContext context,
@@ -91,15 +98,16 @@ class StoreHourController extends StateNotifier<bool> {
     state = true;
 
     final res = await _storeHourRepository.addHoliday(holidayDate);
+
     state = false;
 
     res.fold(
-      (l) => showSnackBar(context, l.message),
-      (r) => showSnackBar(context, "Holiday added successfully"),
+      (failure) => showSnackBar(context, failure.message),
+      (_) => showSnackBar(context, "Holiday added successfully"),
     );
   }
 
-  // ✅ Remove Holiday
+  /// Remove a holiday date from the system
   Future<void> removeHoliday({
     required DateTime holidayDate,
     required BuildContext context,
@@ -107,15 +115,16 @@ class StoreHourController extends StateNotifier<bool> {
     state = true;
 
     final res = await _storeHourRepository.removeHoliday(holidayDate);
+
     state = false;
 
     res.fold(
-      (l) => showSnackBar(context, l.message),
-      (r) => showSnackBar(context, "Holiday removed successfully"),
+      (failure) => showSnackBar(context, failure.message),
+      (_) => showSnackBar(context, "Holiday removed successfully"),
     );
   }
 
-  // ✅ Fetch Holidays Stream
+  /// Fetch stream of holidays
   Stream<List<DateTime>> fetchHolidays() {
     return _storeHourRepository.fetchHolidays();
   }

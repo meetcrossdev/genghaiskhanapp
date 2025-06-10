@@ -160,6 +160,7 @@ class _CheckoutScreensState extends ConsumerState<CheckoutScreens> {
                                               ),
                                             ),
                                           ),
+                                          //quantity button increase
                                           IconButton(
                                             icon: const Icon(Icons.add),
                                             onPressed: () {
@@ -298,7 +299,7 @@ class _CheckoutScreensState extends ConsumerState<CheckoutScreens> {
                                     ),
                                   ),
                                   Text(
-                                    "\$${finalTotal}",
+                                    "\$${finalTotal.toStringAsFixed(2)}",
                                     style: const TextStyle(
                                       color: Colors.red,
                                       fontSize: 20,
@@ -377,6 +378,8 @@ class _CheckoutScreensState extends ConsumerState<CheckoutScreens> {
           },
         );
   }
+
+  //dialog to display additional notes to user
 
   void showAdditionalNotesDialog(BuildContext context, String additionalNotes) {
     showDialog(

@@ -1,6 +1,8 @@
 import 'dart:developer';
 import 'dart:ui';
-
+import 'package:gzresturent/features/home/controller/category_controller.dart';
+import 'package:gzresturent/features/home/screen/menu_screen.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +15,8 @@ import 'package:gzresturent/features/auth/controller/auth_controller.dart';
 import 'package:gzresturent/features/home/controller/ad_ons_controller.dart';
 import 'package:gzresturent/features/home/controller/cart_controller.dart';
 import 'package:gzresturent/features/home/controller/menu_controller.dart';
+import 'package:gzresturent/features/home/screen/categories_screen.dart';
+import 'package:gzresturent/features/home/screen/notifications_screen.dart';
 import 'package:gzresturent/features/home/screen/reservation_screen.dart';
 import 'package:gzresturent/features/profile/controller/profile_controller.dart';
 import 'package:gzresturent/models/ads_on.dart';
@@ -35,94 +39,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch the addon data from the provider
     var addonData = ref.watch(addonsFetchProvider).value;
+
+    // Watch the menu fetch provider and build UI based on the current state
     return ref
         .watch(menuFetchProvider)
         .when(
+          // If data is successfully loaded
           data: (data) {
+            // Flatten all menu items into a single list
             final allItems = data.expand((menu) => menu.items).toList();
+
+            // Categorize menu items for display
             final categorizedItems = categorizeMenuItems(data);
+
             return Scaffold(
               appBar: AppBar(
                 title: Column(
                   children: [
-                    // const Text(
-                    //   "Location",
-                    //   style: TextStyle(fontSize: 12, color: Colors.grey),
-                    // ),
-                    // Row(
-                    //   mainAxisAlignment: MainAxisAlignment.center,
-                    //   children: [
-                    //     const Icon(Icons.location_on, color: Colors.red, size: 18),
-                    //     const SizedBox(width: 4),
-                    //     Text(
-                    //       "172 Grand St, NY",
-                    //       style: GoogleFonts.poppins(
-                    //         fontSize: 16,
-                    //         fontWeight: FontWeight.bold,
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
+                    // Restaurant logo
                     Image.asset('assets/images/logo.png', fit: BoxFit.cover),
                   ],
                 ),
                 centerTitle: true,
-                leading: IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () {},
-                ),
+
+                // If user is logged in, show their loyalty points in a CircleAvatar
+                leading:
+                    ref.watch(userProvider) == null
+                        ? Container() // Empty container if no user is logged in
+                        : Padding(
+                          padding: const EdgeInsets.all(1.0),
+                          child: CircleAvatar(
+                            backgroundColor: Colors.red,
+                            child: Center(
+                              child: Text(
+                                "${ref.watch(userProvider)!.loyaltyPoints.toString()} Gk Points",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11.sp,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                // Notification button
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.notifications_none),
-                    onPressed: () {},
+                    onPressed: () {
+                      // Navigate to notification screen
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => NotificationScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
+
               body: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Search Bar
-                      // Container(
-                      //   height: 40.h,
-                      //   padding: const EdgeInsets.all(12),
-                      //   decoration: BoxDecoration(
-                      //     color: Theme.of(context).cardColor,
-                      //     borderRadius: BorderRadius.circular(16),
-                      //     boxShadow: [
-                      //       BoxShadow(
-                      //         color: Colors.black.withOpacity(0.05),
-                      //         blurRadius: 6,
-                      //         spreadRadius: 2,
-                      //       ),
-                      //     ],
-                      //   ),
-                      //   child: TextField(
-                      //     decoration: InputDecoration(
-                      //       hintText: "Search Food, groceries, drink, etc.",
-                      //       hintStyle: TextStyle(fontSize: 12.sp),
-                      //       prefixIcon: const Icon(Icons.search),
-                      //       suffixIcon: const Icon(Icons.tune),
-                      //       //  filled: true,
-                      //       //  fillColor: Theme.of(context).cardColor,
-                      //       border: OutlineInputBorder(
-                      //         borderRadius: BorderRadius.circular(12),
-                      //         borderSide: BorderSide.none, // Removes border
-                      //       ),
-                      //       enabledBorder: OutlineInputBorder(
-                      //         borderRadius: BorderRadius.circular(12),
-                      //         borderSide: BorderSide.none,
-                      //       ),
-                      //       focusedBorder: OutlineInputBorder(
-                      //         borderRadius: BorderRadius.circular(12),
-                      //         borderSide: BorderSide.none,
-                      //       ),
-                      //     ),
-                      //   ),
-                      // ),
+                      // Reservation button
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           shape: RoundedRectangleBorder(
@@ -132,80 +118,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           elevation: 1,
                           minimumSize: Size(double.infinity, 40.h),
                         ),
-                        onPressed: () async {
+                        onPressed: () {
+                          final today = DateTime.now().weekday;
+
+                          // Prevent reservations on Monday and Sunday
+                          if (today == DateTime.monday ||
+                              today == DateTime.sunday) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "No reservation available for today.",
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          // Navigate to the reservation screen
                           Navigator.of(
                             context,
                           ).pushNamed(ReservationScreen.routeName);
                         },
-                        child: Text(
+                        child: const Text(
                           'Make Reservation',
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
+
                       const SizedBox(height: 16),
-                      // Carousel Banner
+
+                      // Promotional banner carousel
                       offerBanner(context),
 
                       const SizedBox(height: 16),
 
-                      // Categories List
+                      // Category chips row
                       SizedBox(
                         height:
                             MediaQuery.of(context).size.height > 600
                                 ? 100.h
                                 : 80.h,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            categoryChip("Steak"),
-                            categoryChip("Desserts"),
-                            categoryChip("Breakfast"),
-                            categoryChip("Fast Food"),
-                            categoryChip("Sea Food"),
-                          ],
-                        ),
+                        child: ref
+                            .watch(allcategoryProvider)
+                            .when(
+                              data: (categories) {
+                                if (categories.isEmpty) {
+                                  return const Center(
+                                    child: Text('No categories found.'),
+                                  );
+                                }
+
+                                // Horizontal list of category chips
+                                return ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: categories.length,
+                                  itemBuilder: (context, index) {
+                                    final category = categories[index];
+                                    return categoryChip(
+                                      category.title,
+                                      category.imageUrl,
+                                      context,
+                                    );
+                                  },
+                                );
+                              },
+                              loading:
+                                  () => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                              error:
+                                  (error, _) =>
+                                      Center(child: Text('Error: $error')),
+                            ),
                       ),
+
                       const SizedBox(height: 16),
 
+                      // List of categorized menu sections
                       ...categorizedItems.entries.map((entry) {
                         return CategorySection(
                           categoryName: entry.key,
                           items: entry.value,
                           ref: ref,
-                          data: addonData!,
+                          data: addonData!, // Safe since data is already loaded
                         );
                       }).toList(),
-
-                      // Food Grid
-                      // SizedBox(
-                      //   height: 240.h,
-                      //   child: ListView.builder(
-                      //     shrinkWrap: true,
-
-                      //     itemCount: allItems.length,
-                      //     scrollDirection: Axis.horizontal,
-                      //     itemBuilder: (context, index) {
-                      //       var item = allItems[index];
-
-                      //       return GestureDetector(
-                      //         onTap: () {
-                      //           showFoodDetailsBottomSheet(context);
-                      //         },
-                      //         child: foodCard(
-                      //           "Flavorful Fried Rice Fiesta",
-                      //           "Karina Anindya",
-                      //         ),
-                      //       );
-                      //       //  foodCard("Delicious Breakfast", "Karina Anindya"),
-                      //     },
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),
               ),
             );
           },
+
+          // Loading state
           loading:
               () => const Scaffold(
                 body: Center(
@@ -214,14 +219,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ),
+
+          // Error state
           error: (err, stack) {
-            log('error is ${err}');
+            log('error is $err'); // Log the error for debugging
             return Scaffold(body: Center(child: Text('Error: $err')));
           },
         );
   }
 }
-
+//UI code for displaying the categories content
 class CategorySection extends StatelessWidget {
   final String categoryName;
   final List<MenuItem> items;
@@ -244,7 +251,9 @@ class CategorySection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Text(
-            categoryName, // 🔹 Dynamic Category Name
+            categoryName == 'All-You-Care-To-Eat BBQ'
+                ? '$categoryName \n(Only Available For Dine In)'
+                : categoryName, // 🔹 Dynamic Category Name
             style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
           ),
         ),
@@ -276,6 +285,7 @@ class CategorySection extends StatelessWidget {
 }
 
 List<String> selectedAddons = [];
+
 void showFoodDetailsBottomSheet(
   BuildContext context,
   MenuItem item,
@@ -444,14 +454,6 @@ void showFoodDetailsBottomSheet(
                       ),
                     ),
                     SizedBox(height: 10.h),
-                    // Borhani Options (Radio Buttons)
-                    // Padding(
-                    //   padding: EdgeInsets.all(10.0.sp),
-                    //   child: _buildOptionSection(context, "Borhani", [
-                    //     _buildRadioOption("1 ltr", 120.0),
-                    //     _buildRadioOption("half", 60.0),
-                    //   ], isOptional: true),
-                    // ),
 
                     // Addons (Checkboxes)
                     Padding(
@@ -483,71 +485,6 @@ void showFoodDetailsBottomSheet(
                         ),
                       ),
                     ),
-                    // SizedBox(
-                    //   height: 100.h,
-                    //   width: double.infinity,
-                    //   child: Padding(
-                    //     padding: const EdgeInsets.all(10.0),
-                    //     child: ref
-                    //         .watch(addonsFetchProvider)
-                    //         .when(
-                    //           data: (data) {
-                    //             if (data.isEmpty) {
-                    //               return Center(
-                    //                 child: Padding(
-                    //                   padding: const EdgeInsets.only(top: 18.0),
-                    //                   child: Text('No Addons to show'),
-                    //                 ),
-                    //               );
-                    //             } else {
-                    //               return ListView.builder(
-                    //                 itemCount: data.length,
-                    //                 itemBuilder: (context, index) {
-                    //                   return _buildCheckboxOption(
-                    //                     data[index].title,
-                    //                     data[index].price,
-                    //                     selectedAddons,
-                    //                     setState,
-                    //                   );
-                    //                 },
-                    //               );
-                    //             }
-                    //           },
-                    //           loading:
-                    //               () => const Scaffold(
-                    //                 body: Center(
-                    //                   child: LoadingIndicator(
-                    //                     indicatorType:
-                    //                         Indicator.ballClipRotatePulse,
-                    //                   ),
-                    //                 ),
-                    //               ),
-                    //           error: (err, stack) {
-                    //             log('error is ${err}');
-                    //             return Scaffold(
-                    //               body: Center(child: Text('Error: $err')),
-                    //             );
-                    //           },
-                    //         ),
-                    //   ),
-                    // ),
-                    // Padding(
-                    //   padding: EdgeInsets.all(10.0.sp),
-                    //   child: _buildOptionSection(context, "Addons", [
-                    //     _buildCheckboxOption(
-                    //       "Coke",
-                    //       5.00,
-                    //       selectedAddons,
-                    //       setState,
-                    //     ),
-                    //     _buildCheckboxOption(
-                    //       "Water",
-                    //       15.00,
-                    //       selectedAddons,
-                    //       setState,
-                    //     ),
-                    //   ], isOptional: true),
-                    // ),
 
                     // Total Price
                     Padding(
@@ -694,28 +631,6 @@ Widget _buildRadioOption(String title, double price) {
   );
 }
 
-// Widget _buildCheckboxOption(
-//   String title,
-//   double price,
-//   List<String> selectedAddons,
-//   void Function(void Function()) setState,
-// ) {
-//   return CheckboxListTile(
-//     title: Text(title),
-//     subtitle: Text("\$${price.toStringAsFixed(2)}"),
-//     value: selectedAddons.contains(title),
-//     onChanged: (bool? value) {
-//       setState(() {
-//         if (value == true) {
-//           selectedAddons.add(title);
-//         } else {
-//           selectedAddons.remove(title);
-//         }
-//       });
-//     },
-//   );
-// }
-
 // Helper Widget for Checkbox Options
 Widget _buildCheckboxOption(
   String title,
@@ -796,72 +711,114 @@ Widget _buildOptionSection(
 }
 
 // Offer Banner Widget
+
 Widget offerBanner(BuildContext context) {
-  return Container(
-    width: double.infinity,
-    height: MediaQuery.of(context).size.width > 600 ? 150.h : 120.h,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      image: const DecorationImage(
-        image: NetworkImage(
-          "https://st4.depositphotos.com/3300441/24943/i/450/depositphotos_249433898-stock-photo-assorted-chinese-dishes.jpg",
-        ),
-        fit: BoxFit.cover,
-      ),
-    ),
-    child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.black.withOpacity(0.4),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "New Recipe",
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+  return FutureBuilder<DocumentSnapshot>(
+    future:
+        FirebaseFirestore.instance.collection('utility').doc('banner').get(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Container(
+            width: double.infinity,
+            height: MediaQuery.of(context).size.width > 600 ? 150.h : 120.h,
+            decoration: BoxDecoration(
+              color: Colors.grey,
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            "Order \$20+ & get a discount!",
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70),
+        );
+      } else if (snapshot.hasError ||
+          !snapshot.hasData ||
+          !snapshot.data!.exists) {
+        return const Text("Failed to load banner");
+      }
+
+      final imageUrl = snapshot.data!.get('imageUrl') as String;
+      final buttonText = snapshot.data!.get('buttonText') as String;
+      final title = snapshot.data!.get('title') as String;
+      final description = snapshot.data!.get('description') as String;
+
+      return Container(
+        width: double.infinity,
+        height: MediaQuery.of(context).size.width > 600 ? 150.h : 125.h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          image: DecorationImage(
+            image: NetworkImage(imageUrl),
+            fit: BoxFit.cover,
           ),
-          SizedBox(height: 15.h),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-            child: Text("Order Now", style: TextStyle(color: Colors.black)),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.black.withOpacity(0.4),
           ),
-        ],
-      ),
-    ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 15.h),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (context) => MenuScreen()));
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+                child: Text(buttonText, style: TextStyle(color: Colors.black)),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
   );
 }
 
 // Category Chip Widget
-Widget categoryChip(String label) {
-  return Padding(
-    padding: EdgeInsets.all(5.0.sp),
-    child: SingleChildScrollView(
-      child: Column(
-        children: [
-          CircleAvatar(
-            backgroundColor: Colors.grey[200],
-            radius: 30.r,
-            backgroundImage: NetworkImage(
-              'https://static.vecteezy.com/system/resources/thumbnails/036/397/536/small/ai-generated-chinese-food-spicy-food-isolated-on-transparent-background-png.png',
+Widget categoryChip(String label, String url, BuildContext context) {
+  return GestureDetector(
+    onTap: () {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => CategoriesScreen(name: label)),
+      );
+    },
+    child: Padding(
+      padding: EdgeInsets.all(5.0.sp),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.grey[200],
+              radius: 30.r,
+              backgroundImage: NetworkImage(url),
             ),
-          ),
-          Text(
-            label,
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.sp),
-          ),
-        ],
+            Text(
+              label,
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.sp),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -877,41 +834,7 @@ Widget foodCard(String title, String author, String image) {
       child: Stack(
         children: [
           Image.network(image, height: 240.h, width: 250.w, fit: BoxFit.cover),
-          Positioned(
-            top: 10, // Adjust positioning as needed
-            left: 10, // Adjust positioning as needed
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(
-                30,
-              ), // Rounded corners for pill shape
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: 10,
-                  sigmaY: 10,
-                ), // High blur effect
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ), // Inner padding
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(
-                      0.2,
-                    ), // Transparent black for glass effect
-                    borderRadius: BorderRadius.circular(30), // Match pill shape
-                  ),
-                  child: Text(
-                    'Breakfast',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+
           Positioned(
             bottom: 0,
             left: 0,

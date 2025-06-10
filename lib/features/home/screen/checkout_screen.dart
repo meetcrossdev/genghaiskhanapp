@@ -65,34 +65,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     getUserInfoForOrder();
   }
 
-  // Future<void> createDoorDashDelivery({
-  //   required String customerName,
-  //   required String customerPhone,
-  //   required String dropoffAddress,
-  //   required int orderValue,
-  // }) async {
-  //   final response = await http.post(
-  //     Uri.parse(
-  //       'https://us-central1-genghis-khan-restaurant.cloudfunctions.net/createDoorDashDelivery',
-  //     ),
-  //     headers: {'Content-Type': 'application/json'},
-  //     body: json.encode({
-  //       'dropoffAddress': dropoffAddress,
-  //       'customerPhone': customerPhone,
-  //       'customerName': customerName,
-  //       'orderValue': orderValue,
-  //     }),
-  //   );
-
-  //   if (response.statusCode == 200) {
-  //     print("Delivery created: ${response.body}");
-  //     // Show success to user or proceed accordingly
-  //   } else {
-  //     print("Failed to create delivery: ${response.body}");
-  //     // Handle error
-  //   }
-  // }
-
+  // get the logged user credetionals
   getUserInfoForOrder() {
     var user = ref.read(userProvider);
     nameController = TextEditingController(text: user?.name);
@@ -110,6 +83,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     var tax = ref.watch(taxStreamProvider).value;
     var loggedUser = ref.watch(userProvider);
     var currentAddress = loggedUser?.address;
+    // function that place order
     void placeOrder(
       BuildContext context,
       String paymentIntentid,
@@ -123,6 +97,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               quantity: cartItem.quantity,
               price: cartItem.price,
               imageUrl: cartItem.productImage,
+              notes: cartItem.notes,
             );
           }).toList();
 
@@ -221,7 +196,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ),
         centerTitle: true,
         actions: [
-          Icon(Icons.person),
+          //show quantituy stock
           Stack(
             children: [
               Icon(Icons.shopping_cart),
@@ -270,9 +245,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    //UI for delivery section
 
                     deliverySelection(currentAddress),
                     const SizedBox(height: 20),
+                    //order info of user
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -310,6 +287,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            //display tex
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -330,6 +308,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
               ],
             ),
+            //display delivery price if selected
             if (selectedDelivery.toLowerCase() == 'delivery')
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -351,6 +330,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                 ],
               ),
+              //display total amount
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -364,8 +344,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 Text(
                   selectedDelivery.toLowerCase() != 'delivery'
-                      ? "${widget.total + (widget.total * tax / 100)} \$"
-                      : "${widget.total + (widget.total * tax / 100) + 9.75} \$",
+                      ? "${(widget.total + (widget.total * tax / 100)).toStringAsFixed(2)} \$"
+                      : "${(widget.total + (widget.total * tax / 100) + 9.75).toStringAsFixed(2)} \$",
                   style: TextStyle(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w400,
@@ -447,7 +427,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ),
     );
   }
-
+//delivery and order intitial details UI logic
   deliverySelection(String? address) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -548,7 +528,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               const SizedBox(width: 5),
               GestureDetector(
                 onTap: () {
+                  //loyalty point usage 
                   var user = ref.read(userProvider);
+                  //if points are less then 100
                   if (user!.loyaltyPoints < 100) {
                     showSnackBar(
                       context,
@@ -556,6 +538,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     );
                     return;
                   }
+                  //show loyalty points dialog and allow comsuption 
                   showLoyaltyPointDialog(context, user.loyaltyPoints, (
                     discount,
                     remainingPoints,
@@ -755,7 +738,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ),
     );
   }
-
+//loyalty point dialog ui code
   void showLoyaltyPointDialog(
     BuildContext context,
     int totalPoints,
@@ -808,7 +791,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     backgroundColor: Colors.white,
                   ),
                   onPressed: () {
-                    // TODO: Handle redemption logic here
+                // Handle redemption logic here
                     onRedeem(dollars, totalPoints - selectedPoints.toInt());
 
                     Navigator.pop(context);

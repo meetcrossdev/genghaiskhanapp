@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>60189244962-u3d9q7aaan37n43h9epo7gr8b8b6vmh1.apps.googleusercontent.com</string>
+	<string>60189244962-8pbj9bvgjcn92av4m5g4fiih6fpjkeuj.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.60189244962-u3d9q7aaan37n43h9epo7gr8b8b6vmh1</string>
+	<string>com.googleusercontent.apps.60189244962-8pbj9bvgjcn92av4m5g4fiih6fpjkeuj</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>60189244962-cdhsk7trpmkb0lf0qf9dar9ggoenhjrh.apps.googleusercontent.com</string>
+	<string>60189244962-cr7drs41pj04dtt9s31qqf9ki2rpbinj.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCl7sfy7W77_zqx6gwziP_Sc07sq2rT33Q</string>
 	<key>GCM_SENDER_ID</key>
@@ -15,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.meetcross.gkbbg</string>
+	<string>com.example.gzresturent</string>
 	<key>PROJECT_ID</key>
 	<string>genghis-khan-restaurant</string>
 	<key>STORAGE_BUCKET</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:60189244962:ios:7cc3056a68e55c2638547b</string>
+	<string>1:60189244962:ios:2a3d7f9dc089cc3438547b</string>
 </dict>
 </plist>

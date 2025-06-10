@@ -1,6 +1,13 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gzresturent/core/constant/colors.dart';
 import 'package:gzresturent/core/constant/themenotfier.dart';
 import 'package:gzresturent/core/utility.dart';
 import 'package:gzresturent/features/auth/login_screen.dart';
@@ -24,6 +31,89 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  Future<void> deleteUserAccount(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("No user is signed in.")));
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return Platform.isIOS
+            ? CupertinoAlertDialog(
+              title: const Text("Delete Account"),
+              content: const Text(
+                "Are you sure you want to delete your account and all associated data?",
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text("Cancel"),
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                ),
+                CupertinoDialogAction(
+                  isDestructiveAction: true,
+                  child: const Text("Delete"),
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                ),
+              ],
+            )
+            : AlertDialog(
+              title: const Text("Delete Account"),
+              content: const Text(
+                "Are you sure you want to delete your account and all associated data?",
+              ),
+              actions: [
+                TextButton(
+                  child: const Text("Cancel"),
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text("Delete"),
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                ),
+              ],
+            );
+      },
+    );
+
+    if (confirm != true) return; // User cancelled
+
+    try {
+      // 1. Delete Firestore user data
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .delete();
+
+      // 2. Delete Firebase Auth user
+      await user.delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Your account has been deleted.")),
+      );
+
+      // 3. Navigate to login or welcome screen
+      ref.read(userProvider.notifier).state = null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please re-login and try again.")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to delete account: ${e.message}")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
@@ -163,7 +253,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         context,
                       ).pushNamed(MyBookingScreen.routeName);
                     },
-                    child: _quickActionCard(Icons.book_online, "Bookings"),
+                    child: _quickActionCard(Icons.book_online, "Reservations"),
                   ),
                   GestureDetector(
                     onTap: () {
@@ -176,7 +266,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       }
                       Navigator.of(context).pushNamed(RewardsScreen.routeName);
                     },
-                    child: _quickActionCard(Icons.star_border, "Loyalty Point"),
+                    child: _quickActionCard(Icons.star_border, 'Gk Points'),
                   ),
                 ],
               ),
@@ -196,7 +286,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Container(
                 decoration: BoxDecoration(
                   // color: Colors.white,
-                  color: Theme.of(context).cardColor,
+                  //  color: Theme.of(context).cardColor,
+                  color: Apptheme.logoInsideColor,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -234,7 +325,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ).pushNamed(OrderListScreen.routeName);
                     }),
 
-                    _menuItem(Icons.list_alt, "Order Details", () {}),
+                    //      _menuItem(Icons.list_alt, "Order Details", () {}),
                     _menuItem(Icons.money, "Report Issues", () {
                       if (user == null) {
                         showSnackBar(
@@ -265,6 +356,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     //     ),
                     //   );
                     // }),
+                    if (user != null)
+                      _menuItem(Icons.delete, "Delete Account", () {
+                        deleteUserAccount(context);
+                      }),
                     _menuItem(Icons.location_on_outlined, "Address", () {
                       if (user == null) {
                         showSnackBar(
@@ -289,7 +384,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       title: Text(
                         user != null ? "Logout" : "Login",
-                        style: TextStyle(fontSize: 14),
+                        style: TextStyle(fontSize: 14, color: Colors.white),
                       ),
                       trailing: Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
@@ -317,9 +412,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _quickActionCard(IconData icon, String title) {
     return Container(
       width: 100,
-      padding: const EdgeInsets.all(12),
+
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        //  color: Theme.of(context).cardColor,
+        color: Apptheme.logoInsideColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -331,11 +428,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       child: Column(
         children: [
-          Icon(icon, size: 28),
+          Icon(icon, size: 28, color: Colors.white),
           const SizedBox(height: 6),
           Text(
             title,
-            style: TextStyle(fontSize: 14),
+            style: TextStyle(fontSize: 12.sp, color: Colors.white),
             textAlign: TextAlign.center,
           ),
         ],
@@ -346,9 +443,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   // Menu Item Widget
   Widget _menuItem(IconData icon, String title, void Function()? onTap) {
     return ListTile(
-      leading: Icon(icon),
-      title: Text(title, style: TextStyle(fontSize: 14)),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+      leading: Icon(icon, color: Colors.white),
+      title: Text(title, style: TextStyle(fontSize: 14, color: Colors.white)),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white),
       onTap: onTap,
     );
   }

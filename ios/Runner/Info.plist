@@ -24,7 +24,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
+	<string>1.0.5</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -34,7 +34,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.60189244962-8pbj9bvgjcn92av4m5g4fiih6fpjkeuj</string>
+				<string>com.googleusercontent.apps.60189244962-u3d9q7aaan37n43h9epo7gr8b8b6vmh1</string>
 			</array>
 		</dict>
 	</array>
@@ -45,14 +45,14 @@
 	<key>GoogleService-Info</key>
 	<dict>
 		<key>CLIENT_ID</key>
-		<string>60189244962-cp8hg8udqv3jq366unu0ja9s770kfmaq.apps.googleusercontent.com</string>
+		<string>60189244962-u3d9q7aaan37n43h9epo7gr8b8b6vmh1.apps.googleusercontent.com</string>
 	</dict>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>We need your location to get your current address for delivery</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We use your location to show relevant data.</string>
+	<string>We need your location to get your current address for future food deliveries option</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 <string>We need your location to get your current address for delivery.</string>
 <key>NSPhotoLibraryUsageDescription</key>
@@ -66,11 +66,6 @@
 
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>location</string>
-		<string>remote-notification</string>
-	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
